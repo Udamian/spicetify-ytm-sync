@@ -1,0 +1,36 @@
+# --- Secrets: never commit credentials, captured headers or tokens -------------------
+browser.json
+oauth.json
+headers.txt
+*.headers
+.env
+.env.*
+spikes/.s1/
+
+# --- Python --------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+
+# --- Node ----------------------------------------------------------------------------
+node_modules/
+*.tsbuildinfo
+npm-debug.log*
+
+# --- OS / editors --------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp

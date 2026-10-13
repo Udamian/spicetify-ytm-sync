@@ -1,0 +1,38 @@
+name: Bug report
+description: Something does not work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Do not paste cookies, `authorization` headers, `browser.json` or the companion token.**
+        They give full access to your account. If you pasted them by mistake, sign out of
+        YouTube Music everywhere and delete the post.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: Companion (`ytm-sync-companion --version`), Spotify, Spicetify, `ytmusicapi`
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options: [Windows, macOS, Linux]
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: Please check it contains no cookies, tokens or headers first.
+      render: text
