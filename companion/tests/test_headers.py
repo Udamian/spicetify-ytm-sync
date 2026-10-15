@@ -46,3 +46,58 @@ def test_missing_authorization_is_only_a_warning():
 
 def test_repr_never_contains_secret_values():
     assert "fake-secret" not in repr(check_headers(RAW_HEADERS))
+
+
+PS_SAMPLE = '''$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$session.Cookies.Add((New-Object System.Net.Cookie("SAPISID", "abc/def", "/", ".youtube.com")))
+$session.Cookies.Add((New-Object System.Net.Cookie("YSC", "xyz", "/", ".youtube.com")))
+Invoke-WebRequest -Uri "https://music.youtube.com/youtubei/v1/browse" `
+-Method "POST" `
+-Headers @{
+"authority"="music.youtube.com"
+  "authorization"="SAPISIDHASH 1_aa_u"
+  "sec-ch-ua"="`"Chrome`";v=`"1`""
+  "x-goog-authuser"="0"
+} `
+-Body "{}"
+'''
+
+CURL_SAMPLE = (
+    "curl 'https://music.youtube.com/youtubei/v1/browse' "
+    "-H 'authorization: SAPISIDHASH 1_aa_u' -H 'x-goog-authuser: 0' "
+    "-b 'SAPISID=abc/def; YSC=xyz' --data-raw '{}'"
+)
+
+
+def test_powershell_format():
+    check = check_headers(PS_SAMPLE)
+    assert check.ok
+    assert check.headers["cookie"] == "SAPISID=abc/def; YSC=xyz"
+    assert check.headers["x-goog-authuser"] == "0"
+    assert check.headers["sec-ch-ua"] == '"Chrome";v="1"'
+    assert not check.warnings
+
+
+def test_curl_format():
+    check = check_headers(CURL_SAMPLE)
+    assert check.ok
+    assert check.headers["cookie"] == "SAPISID=abc/def; YSC=xyz"
+    assert check.headers["authorization"].startswith("SAPISIDHASH")
+
+
+CURL_CMD_SAMPLE = (
+    'curl ^"https://music.youtube.com/youtubei/v1/browse^" ^\n'
+    '  -H ^"authorization: SAPISIDHASH 1_aa_u^" ^\n'
+    '  -H ^"sec-ch-ua: ^\\^"Chrome^\\^";v=^\\^"1^\\^"^" ^\n'
+    '  -H ^"x-goog-authuser: 0^" ^\n'
+    '  -b ^"SAPISID=abc/def; YSC=xyz; X=a^%^3D^%^3D^" ^\n'
+    '  --data-raw ^"^{^}^"\n'
+)
+
+
+def test_curl_cmd_format():
+    check = check_headers(CURL_CMD_SAMPLE)
+    assert check.ok
+    assert check.headers["cookie"] == "SAPISID=abc/def; YSC=xyz; X=a%3D%3D"
+    assert check.headers["x-goog-authuser"] == "0"
+    assert check.headers["authorization"].startswith("SAPISIDHASH")

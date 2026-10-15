@@ -14,8 +14,7 @@ API_VERSION = 1
 HOST = "127.0.0.1"
 DEFAULT_PORT = 48215
 
-# Origin of the Spotify desktop client's web view. TO BE CONFIRMED in spike S3
-# (run `location.origin` in the Spotify DevTools console).
+# Origin of the Spotify web view (confirmed with `location.origin` in spike S3).
 DEFAULT_ALLOWED_ORIGINS = ("https://xpui.app.spotify.com",)
 
 

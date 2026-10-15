@@ -3,7 +3,7 @@
 Steps
   1. Open https://music.youtube.com in an INCOGNITO window and sign in.
   2. DevTools (F12) > Network > pick a POST request to music.youtube.com > right click >
-     Copy > Copy request headers. Paste them into a text file (for example
+     Copy > Copy request headers (or Copy as PowerShell / cURL (bash or cmd): all work). Paste them into a text file (for example
      spikes/.s1/headers.txt; the folder is git-ignored).
   3. CLOSE the incognito window, so the browser never rotates these cookies.
   4. Store the session:   python spikes/s1_session_durability.py --init spikes/.s1/headers.txt

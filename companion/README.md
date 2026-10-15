@@ -25,7 +25,7 @@ ruff check .
 | Variable | Default | Meaning |
 |---|---|---|
 | `YTM_SYNC_PORT` | `48215` | Listening port (always on `127.0.0.1`) |
-| `YTM_SYNC_ALLOWED_ORIGINS` | `https://xpui.app.spotify.com` | Comma-separated browser origins allowed to call the API (**unconfirmed**, spike S3) |
+| `YTM_SYNC_ALLOWED_ORIGINS` | `https://xpui.app.spotify.com` | Comma-separated browser origins allowed to call the API (confirmed in spike S3) |
 | `YTM_SYNC_DATA_DIR` | OS app-data dir + `ytm-sync` | Where the token, credentials and database are stored |
 
 ## API (v1)
