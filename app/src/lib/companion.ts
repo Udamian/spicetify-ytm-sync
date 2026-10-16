@@ -94,5 +94,98 @@ export const submitHeaders = (headers: string) =>
     auth: true,
   });
 
+export type SyncTrack = {
+  uri: string;
+  title: string;
+  artists: string[];
+  durationMs: number | null;
+  album?: string | null;
+};
+export type SyncKind = "initial_dump" | "incremental";
+export type JobState = "queued" | "running" | "done" | "failed" | "cancelled";
+export type SyncReport = {
+  matched_ok: number;
+  to_review: number;
+  not_found: number;
+  added: number;
+  already_present: number;
+  duplicates_collapsed: number;
+  order_verified: boolean;
+  order_moves: number;
+};
+export type Job = {
+  id: number;
+  pair_id: number;
+  kind: SyncKind;
+  state: JobState;
+  done: number;
+  total: number;
+  progress: number;
+  error: string | null;
+  error_code: string | null;
+  report: SyncReport | null;
+  created_at: string | null;
+  finished_at: string | null;
+};
+export type ReviewItem = {
+  uri: string;
+  title: string;
+  artists: string;
+  duration_ms: number | null;
+  status: "review" | "not_found";
+  video_id: string | null;
+  confidence: number | null;
+};
+
+export const previewSync = (tracks: SyncTrack[]) =>
+  request<{ total: number; already_matched: number; to_search: number; estimated_seconds: number }>(
+    "/sync/preview",
+    { method: "POST", body: { tracks }, auth: true }
+  );
+
+export const startSync = (args: {
+  sourceUri: string;
+  destPlaylistId: string;
+  kind: SyncKind;
+  tracks: SyncTrack[];
+}) =>
+  request<{ job_id: number | null; pair_id?: number; nothing_to_do?: boolean }>("/sync/start", {
+    method: "POST",
+    body: {
+      source_uri: args.sourceUri,
+      dest_playlist_id: args.destPlaylistId,
+      kind: args.kind,
+      tracks: args.tracks,
+    },
+    auth: true,
+  });
+
+export const cancelSync = (jobId: number) =>
+  request<{ cancelled: boolean }>("/sync/cancel", {
+    method: "POST",
+    body: { job_id: jobId },
+    auth: true,
+  });
+
+export const syncStatus = () =>
+  request<{
+    jobs: Job[];
+    worker_running: boolean;
+    review_count: number;
+    not_found_count: number;
+  }>("/status", { auth: true });
+
+export const jobStatus = (jobId: number) =>
+  request<{ job: Job }>(`/status?job_id=${jobId}`, { auth: true });
+
+export const listReview = () => request<{ items: ReviewItem[] }>("/review", { auth: true });
+
+export const resolveReview = (uri: string, videoId: string | null) =>
+  request<{ ok: boolean }>("/review/resolve", {
+    method: "POST",
+    body: { uri, video_id: videoId },
+    auth: true,
+  });
+
 export const listPlaylists = () =>
   request<{ playlists: Playlist[] }>("/playlists", { auth: true });

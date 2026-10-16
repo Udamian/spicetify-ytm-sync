@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import logging
 import sys
 
-from . import __version__, jobs
+from . import __version__
 from .app import create_app
 from .config import HOST, Settings
-from .db import init_db
 from .logging_setup import setup_logging
 
 
@@ -25,14 +23,7 @@ def main(argv: list[str] | None = None) -> int:
 
     settings = Settings.from_env()
     log_path = setup_logging(settings.data_dir)
-    conn = init_db(settings.db_path)
-    try:
-        resumed = jobs.recover_interrupted(conn)
-    finally:
-        conn.close()
-    if resumed:
-        logging.getLogger(__name__).info("Re-queued %d interrupted job(s)", resumed)
-    app = create_app(settings, on_new_code=_announce_code)
+    app = create_app(settings, on_new_code=_announce_code, worker_enabled=True)
 
     print(f"YTM Sync companion {__version__} listening on http://{HOST}:{settings.port}")
     print(f"Data directory: {settings.data_dir}")
@@ -41,7 +32,10 @@ def main(argv: list[str] | None = None) -> int:
 
     # Flask's built-in server is enough for a single local user. Revisit when packaging
     # (roadmap phase 5), e.g. waitress.
-    app.run(host=HOST, port=settings.port, debug=False, threaded=True)
+    try:
+        app.run(host=HOST, port=settings.port, debug=False, threaded=True)
+    finally:
+        app.extensions["ytm_sync"].worker.stop()  # a running job is paused and resumes later
     return 0
 
 

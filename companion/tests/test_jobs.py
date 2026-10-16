@@ -78,3 +78,21 @@ def test_finish_redacts_error_and_rejects_non_final_state(conn, pair_id):
     assert "TOPSECRET" not in (jobs.get(conn, job.id).error or "")
     with pytest.raises(ValueError):
         jobs.finish(conn, job.id, "running")
+
+
+def test_finishing_a_cancelled_job_does_not_revive_it(conn, pair_id):
+    job = jobs.enqueue(conn, pair_id, "initial_dump")
+    jobs.claim_next(conn)
+    jobs.cancel(conn, job.id)
+    jobs.finish(conn, job.id, "done", report={"added": 1})  # the worker finishing a moment late
+    assert jobs.get(conn, job.id).state == "cancelled"
+
+
+def test_report_and_error_code_roundtrip(conn, pair_id):
+    job = jobs.enqueue(conn, pair_id, "initial_dump", payload="[]")
+    jobs.claim_next(conn)
+    jobs.finish(conn, job.id, "failed", "x", error_code="session_expired", report={"a": 1})
+    saved = jobs.get(conn, job.id)
+    assert (saved.error_code, saved.report) == ("session_expired", {"a": 1})
+    assert jobs.payload(conn, job.id) == "[]"
+    assert [j.id for j in jobs.recent(conn)] == [job.id]

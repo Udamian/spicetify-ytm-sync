@@ -40,11 +40,11 @@
     copy(text); // DevTools' own copy(): works even when the page is not focused
     console.log(`Copied ${items.length} tracks to the clipboard. Paste them into the file.`);
     return;
-  } catch { }
+  } catch {}
   try {
     await navigator.clipboard.writeText(text);
     console.log(`Copied ${items.length} tracks to the clipboard.`);
     return;
-  } catch { }
+  } catch {}
   console.log(`${items.length} tracks ready. Run:  copy(window.__tracks)`);
 })();

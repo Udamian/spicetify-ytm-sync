@@ -8,8 +8,10 @@ duplicates work: after a crash, `recover_interrupted` puts `running` jobs back i
 
 from __future__ import annotations
 
+import json
 import sqlite3
 from dataclasses import dataclass
+from typing import Any
 
 from .logging_setup import redact
 
@@ -26,6 +28,10 @@ class Job:
     done: int
     total: int
     error: str | None
+    error_code: str | None = None
+    report: dict[str, Any] | None = None
+    created_at: str | None = None
+    finished_at: str | None = None
 
     @property
     def progress(self) -> float:
@@ -38,6 +44,9 @@ def _job(row: sqlite3.Row | None) -> Job | None:
     return Job(
         id=row["id"], pair_id=row["pair_id"], kind=row["kind"], state=row["state"],
         done=row["done"], total=row["total"], error=row["error"],
+        error_code=row["error_code"],
+        report=json.loads(row["report"]) if row["report"] else None,
+        created_at=row["created_at"], finished_at=row["finished_at"],
     )
 
 
@@ -70,13 +79,16 @@ def active_for_pair(conn: sqlite3.Connection, pair_id: int) -> Job | None:
     )
 
 
-def enqueue(conn: sqlite3.Connection, pair_id: int, kind: str, total: int = 0) -> Job:
+def enqueue(
+    conn: sqlite3.Connection, pair_id: int, kind: str, total: int = 0, payload: str | None = None
+) -> Job:
     """Queue a job. If the pair already has an active one, return that instead (no overlap)."""
     existing = active_for_pair(conn, pair_id)
     if existing:
         return existing
     cursor = conn.execute(
-        "INSERT INTO jobs (pair_id, kind, total) VALUES (?, ?, ?)", (pair_id, kind, total)
+        "INSERT INTO jobs (pair_id, kind, total, payload) VALUES (?, ?, ?, ?)",
+        (pair_id, kind, total, payload),
     )
     conn.commit()
     job = get(conn, int(cursor.lastrowid or 0))
@@ -110,14 +122,40 @@ def set_progress(
     conn.commit()
 
 
-def finish(conn: sqlite3.Connection, job_id: int, state: str, error: str | None = None) -> None:
+def finish(
+    conn: sqlite3.Connection,
+    job_id: int,
+    state: str,
+    error: str | None = None,
+    *,
+    error_code: str | None = None,
+    report: dict[str, Any] | None = None,
+) -> None:
+    """Close a running job. A job cancelled meanwhile stays cancelled."""
     if state not in FINAL_STATES:
         raise ValueError(f"not a final state: {state}")
     message = redact(error)[:500] if error else None
     conn.execute(
-        "UPDATE jobs SET state = ?, error = ?, finished_at = datetime('now') WHERE id = ?",
-        (state, message, job_id),
+        "UPDATE jobs SET state = ?, error = ?, error_code = ?, report = ?, "
+        "finished_at = datetime('now') WHERE id = ? AND state = 'running'",
+        (state, message, error_code, json.dumps(report) if report else None, job_id),
     )
+    conn.commit()
+
+
+def payload(conn: sqlite3.Connection, job_id: int) -> str | None:
+    row = conn.execute("SELECT payload FROM jobs WHERE id = ?", (job_id,)).fetchone()
+    return row["payload"] if row else None
+
+
+def recent(conn: sqlite3.Connection, limit: int = 5) -> list[Job]:
+    rows = conn.execute("SELECT * FROM jobs ORDER BY id DESC LIMIT ?", (limit,)).fetchall()
+    return [job for job in map(_job, rows) if job]
+
+
+def requeue(conn: sqlite3.Connection, job_id: int) -> None:
+    """Put a running job back in the queue (companion shutting down: it resumes next start)."""
+    conn.execute("UPDATE jobs SET state = 'queued' WHERE id = ? AND state = 'running'", (job_id,))
     conn.commit()
 
 

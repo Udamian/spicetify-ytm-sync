@@ -9,7 +9,7 @@ release. Full reasoning and risk matrix (B1-B14): [`viability-study.md`](viabili
 |---|---|
 | 0. Validation spikes | **In progress.** S2 and S3 done, S4 almost (check playlist order), S1 running (days), S5 script ready, S6/S7 manual. See [`spikes/README.md`](../spikes/README.md) |
 | 1. Solid companion | **Mostly done**: security layer, header validation (plain, PowerShell, cURL), settings, SQLite schema, HTTP skeleton, redacting logs, resumable job queue. Missing: wiring `/sync/*` (phase 2), packaging |
-| 2. Sync engine | **Engine done and tested against a fake YouTube Music** (`sync.py`): ordered resumable dump, incremental on top, duplicate filter, retries, order check and repair. Missing: wiring to the `/sync/*` endpoints and a background worker (they still return `501`), then a real run |
+| 2. Sync engine | **Done and tested against a simulated YouTube Music**: matching, ordered resumable dump, incremental on top, duplicate filter, retries, order check and repair, background worker and the `/sync/*`, `/status`, `/review` endpoints. **Next: a real run** into a throw-away playlist |
 | 3. Custom app UI | Scaffold (connection, pairing) + Spotify read layer (`app/src/lib/spotify.ts`); wizard not started |
 | 4-7 | Not started |
 

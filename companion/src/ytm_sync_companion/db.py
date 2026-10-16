@@ -51,6 +51,12 @@ MIGRATIONS: tuple[str, ...] = (
         finished_at TEXT
     );
     """,
+    # --- v2: what a job needs to be resumed, and what the user needs to see ---------------
+    """
+    ALTER TABLE jobs ADD COLUMN payload    TEXT;  -- JSON list of tracks (resume after a restart)
+    ALTER TABLE jobs ADD COLUMN error_code TEXT;  -- session_expired, write_failed, ...
+    ALTER TABLE jobs ADD COLUMN report     TEXT;  -- JSON summary of a finished job
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)

@@ -88,6 +88,18 @@ def is_success(response: object) -> bool:
     return False
 
 
+def resolve_review(conn: Any, spotify_uri: str, video_id: str | None) -> bool:
+    """The user's decision on a `review`/`not_found` track: accept `video_id` or skip it."""
+    status, vid = ("ok", video_id) if video_id else ("skipped", None)
+    cursor = conn.execute(
+        "UPDATE track_map SET status = ?, video_id = ?, confidence = 1.0, "
+        "updated_at = datetime('now') WHERE spotify_uri = ?",
+        (status, vid, spotify_uri),
+    )
+    conn.commit()
+    return cursor.rowcount > 0
+
+
 def plan_moves(current: list[tuple[str, str]], desired: list[str]) -> list[tuple[str, str]]:
     """Moves `(setVideoId, successor_setVideoId)` that put `desired` in order.
 
@@ -270,14 +282,7 @@ class SyncEngine:
         return counts
 
     def resolve_review(self, spotify_uri: str, video_id: str | None) -> None:
-        """The user's decision on a `review`/`not_found` track: accept `video_id` or skip it."""
-        status, vid = ("ok", video_id) if video_id else ("skipped", None)
-        self.conn.execute(
-            "UPDATE track_map SET status = ?, video_id = ?, confidence = 1.0, "
-            "updated_at = datetime('now') WHERE spotify_uri = ?",
-            (status, vid, spotify_uri),
-        )
-        self.conn.commit()
+        resolve_review(self.conn, spotify_uri, video_id)
 
     def desired_videos(self, tracks: list[SpotifyTrack]) -> tuple[list[str], int]:
         """Video ids in Spotify order, one per video, only for tracks with status ok."""

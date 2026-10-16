@@ -215,11 +215,5 @@ def test_playlists_upstream_failure_is_generic(client, auth, fake_client):
     assert "super-secret" not in response.get_data(as_text=True)
 
 
-def test_sync_endpoints_are_not_implemented_yet(client, auth):
-    assert client.post("/sync/preview", headers=auth).status_code == 501
-    assert client.post("/sync/start", headers=auth).status_code == 501
-    assert client.get("/status", headers=auth).status_code == 501
-
-
 def test_fake_client_defaults_are_healthy():
     assert FakeYTMusic().get_library_playlists(limit=1)
