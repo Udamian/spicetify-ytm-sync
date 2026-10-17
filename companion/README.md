@@ -41,10 +41,13 @@ must be on the allow-list. Errors are JSON: `{"error": "<code>"}`.
 | POST | `/auth/headers` | bearer | Body `{"headers": "<raw request headers>"}`. `400 missing_headers` lists header *names* only |
 | DELETE | `/auth` | bearer | Deletes the stored YouTube Music credentials (`204`, idempotent) |
 | GET | `/playlists` | bearer | `{playlists: [{id, title, count}]}`. `409 not_configured` without credentials; `502 youtube_error` on upstream failure |
+| POST | `/playlists` | bearer | Body `{title, privacy?}` (`PRIVATE` default). `201 {id, title, count: 0}`; `400 bad_title`, `409 not_configured`, `502 youtube_error` |
 | POST | `/sync/preview` | bearer | Body `{tracks}`. Returns `{total, already_matched, to_search, estimated_seconds}`. No network |
 | POST | `/sync/start` | bearer | Body `{source_uri, dest_playlist_id, kind, tracks, mode?}`. `kind`: `initial_dump` / `incremental`. `202 {job_id}`; `409 already_running` (with `job_id`) or `not_configured`; `400 bad_tracks` (with `index`), `bad_source`, `bad_destination` |
 | POST | `/sync/cancel` | bearer | Body `{job_id}`. `{cancelled}` |
 | GET | `/status` | bearer | `{jobs: [last 5], worker_running, review_count, not_found_count}`; with `?job_id=N`: `{job}` or `404`. A job has `state`, `done`, `total`, `progress`, `error_code` (`session_expired`, `write_failed`, ...) and, when finished, `report` |
+| GET | `/pairs` | bearer | `{pairs: [{id, source_uri, dest_playlist_id, mode, last_synced_at, synced_count}]}`; `last_synced_at` is null until the first copy finishes |
+| GET | `/pairs/<id>/synced` | bearer | `{uris}`: Spotify URIs of the last completed copy, in Spotify order (the startup check stops at the first one it finds there) |
 | GET | `/review` | bearer | Tracks the matcher was unsure about: `{items: [{uri, title, artists, duration_ms, status, video_id, confidence}]}` |
 | POST | `/review/resolve` | bearer | Body `{uri, video_id}`: accept that YouTube Music video, or `video_id: null` to skip the track |
 

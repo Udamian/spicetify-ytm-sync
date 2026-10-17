@@ -49,6 +49,28 @@ def session_status(auth_path: Path, client_factory: ClientFactory = load_client)
     return "ok"
 
 
+PRIVACY_VALUES = ("PRIVATE", "UNLISTED", "PUBLIC")
+
+
+def create_playlist(
+    auth_path: Path,
+    title: str,
+    privacy: str = "PRIVATE",
+    client_factory: ClientFactory = load_client,
+) -> str:
+    """Create an empty playlist and return its id.
+
+    `ytmusicapi` returns the new id as a string, or the raw response when YouTube refuses
+    (it does not raise), so anything that is not a plausible id is reported as a failure.
+    """
+    created = client_factory(auth_path).create_playlist(
+        title, "Created by YTM Sync", privacy
+    )
+    if not isinstance(created, str) or len(created) < 10:
+        raise RuntimeError("YouTube Music did not create the playlist")
+    return normalize_playlist_id(created)
+
+
 def list_playlists(auth_path: Path, client_factory: ClientFactory = load_client) -> list[dict]:
     """The user's library playlists as `{id, title, count}`."""
     raw = client_factory(auth_path).get_library_playlists(limit=None)

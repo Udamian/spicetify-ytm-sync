@@ -123,6 +123,7 @@ def test_pair_announces_the_rotated_code(settings, fake_client):
         ("post", "/auth/headers"),
         ("delete", "/auth"),
         ("get", "/playlists"),
+        ("post", "/playlists"),
         ("post", "/sync/preview"),
         ("post", "/sync/start"),
         ("get", "/status"),
@@ -211,6 +212,42 @@ def test_playlists_upstream_failure_is_generic(client, auth, fake_client):
     client.post("/auth/headers", json={"headers": RAW_HEADERS}, headers=auth)
     fake_client.fail_with = RuntimeError("cookie=super-secret leaked in message")
     response = client.get("/playlists", headers=auth)
+    assert response.status_code == 502
+    assert "super-secret" not in response.get_data(as_text=True)
+
+
+def test_create_playlist(client, auth, fake_client):
+    client.post("/auth/headers", json={"headers": RAW_HEADERS}, headers=auth)
+    response = client.post("/playlists", json={"title": "  My mirror "}, headers=auth)
+    assert response.status_code == 201
+    assert response.get_json() == {"id": "PLnew1234567890", "title": "My mirror", "count": 0}
+    assert fake_client.created[0] == "My mirror"
+    assert fake_client.created[2] == "PRIVATE"  # private unless asked otherwise
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [{}, {"title": ""}, {"title": "   "}, {"title": 5}, {"title": "x" * 151},
+     {"title": "ok", "privacy": "SECRET"}, [1]],
+)
+def test_create_playlist_bad_body(client, auth, payload):
+    client.post("/auth/headers", json={"headers": RAW_HEADERS}, headers=auth)
+    assert client.post("/playlists", json=payload, headers=auth).status_code == 400
+
+
+def test_create_playlist_requires_credentials(client, auth):
+    response = client.post("/playlists", json={"title": "x"}, headers=auth)
+    assert response.status_code == 409
+
+
+def test_create_playlist_refused_by_youtube_is_a_502(client, auth, fake_client):
+    client.post("/auth/headers", json={"headers": RAW_HEADERS}, headers=auth)
+    fake_client.create_reply = {"error": "refused"}  # ytmusicapi returns, not raises
+    response = client.post("/playlists", json={"title": "x"}, headers=auth)
+    assert response.status_code == 502
+    fake_client.create_reply = "PLnew1234567890"
+    fake_client.fail_with = RuntimeError("cookie=super-secret")
+    response = client.post("/playlists", json={"title": "x"}, headers=auth)
     assert response.status_code == 502
     assert "super-secret" not in response.get_data(as_text=True)
 

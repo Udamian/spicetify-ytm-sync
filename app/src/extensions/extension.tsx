@@ -1,25 +1,14 @@
-import { SUPPORTED_API_VERSION, health, tokenStore } from "../lib/companion";
+import { runStartupSync } from "../lib/startup";
 
-// Runs every time Spotify starts (a custom app's own code only runs when its page is open).
-// Pre-alpha: it only checks that the companion is reachable. The startup sync (roadmap phase 2/3)
-// will call POST /sync/start here when the configured interval has elapsed.
+// Runs every time Spotify starts (a custom app's own code only runs while its page is open).
+// It sends what is new since the last copy to YouTube Music, through the helper app.
 
 (async () => {
-  while (!Spicetify?.showNotification) {
-    await new Promise((resolve) => setTimeout(resolve, 100));
+  // Wait until Spotify's internal APIs exist, then give the UI a moment to settle.
+  while (!Spicetify?.showNotification || !Spicetify?.Platform?.LibraryAPI) {
+    await new Promise((resolve) => setTimeout(resolve, 200));
   }
+  await new Promise((resolve) => setTimeout(resolve, 4000));
 
-  // Not paired yet: the user has not set anything up, so stay silent.
-  if (!tokenStore.get()) return;
-
-  const info = await health();
-  if (!info.ok) {
-    console.debug("[ytm-sync] companion not reachable; skipping startup sync");
-    return;
-  }
-  if (info.data.api_version !== SUPPORTED_API_VERSION) {
-    console.warn(
-      `[ytm-sync] companion API ${info.data.api_version} != expected ${SUPPORTED_API_VERSION}`
-    );
-  }
+  await runStartupSync((message, isError) => Spicetify.showNotification(message, !!isError, 6000));
 })();

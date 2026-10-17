@@ -13,7 +13,10 @@ export type ErrorKind = "offline" | "unauthorized" | "rate_limited" | "rejected"
 
 export type Result<T> =
   | { ok: true; data: T }
-  | { ok: false; error: ErrorKind; status?: number; code?: string };
+  | { ok: false; error: ErrorKind; status?: number; code?: string; details?: ErrorBody };
+
+/** JSON body of an error answer, e.g. `{error: "missing_headers", missing: ["cookie"]}`. */
+export type ErrorBody = { error?: string; missing?: string[]; warnings?: string[]; job_id?: number };
 
 export type HealthInfo = { ok: boolean; version: string; api_version: number };
 export type AuthStatus = "not_configured" | "ok" | "expired" | "error";
@@ -59,20 +62,21 @@ async function request<T>(
     return { ok: true, data: data as T };
   }
 
-  let code: string | undefined;
+  let details: ErrorBody | undefined;
   try {
-    code = (await response.json()).error;
+    details = (await response.json()) as ErrorBody;
   } catch {
     // Body was not JSON; the status code is all we have.
   }
+  const code = details?.error;
   const status = response.status;
   if (status === 401) {
     tokenStore.clear(); // token no longer valid: force a new pairing
-    return { ok: false, error: "unauthorized", status, code };
+    return { ok: false, error: "unauthorized", status, code, details };
   }
-  if (status === 429) return { ok: false, error: "rate_limited", status, code };
-  if (status >= 500) return { ok: false, error: "server", status, code };
-  return { ok: false, error: "rejected", status, code };
+  if (status === 429) return { ok: false, error: "rate_limited", status, code, details };
+  if (status >= 500) return { ok: false, error: "server", status, code, details };
+  return { ok: false, error: "rejected", status, code, details };
 }
 
 export const health = () => request<HealthInfo>("/health");
@@ -187,5 +191,25 @@ export const resolveReview = (uri: string, videoId: string | null) =>
     auth: true,
   });
 
+export const deleteAuth = () => request<void>("/auth", { method: "DELETE", auth: true });
+
 export const listPlaylists = () =>
   request<{ playlists: Playlist[] }>("/playlists", { auth: true });
+
+export const createPlaylist = (title: string) =>
+  request<Playlist>("/playlists", { method: "POST", body: { title }, auth: true });
+
+export type Pair = {
+  id: number;
+  source_uri: string;
+  dest_playlist_id: string;
+  mode: "additive" | "mirror";
+  last_synced_at: string | null;
+  synced_count: number;
+};
+
+export const listPairs = () => request<{ pairs: Pair[] }>("/pairs", { auth: true });
+
+/** Spotify URIs of the pair's last completed sync, in Spotify order. */
+export const pairSynced = (pairId: number) =>
+  request<{ uris: string[] }>(`/pairs/${pairId}/synced`, { auth: true });

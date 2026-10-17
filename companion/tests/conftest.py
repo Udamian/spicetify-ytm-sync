@@ -29,6 +29,14 @@ class FakeYTMusic:
 
     def __init__(self, *, fail_with: Exception | None = None) -> None:
         self.fail_with = fail_with
+        self.created: tuple | None = None
+        self.create_reply: object = "PLnew1234567890"
+
+    def create_playlist(self, title, description, privacy_status="PRIVATE"):
+        if self.fail_with:
+            raise self.fail_with
+        self.created = (title, description, privacy_status)
+        return self.create_reply
 
     def get_library_playlists(self, limit: int | None = 25) -> list[dict]:
         if self.fail_with:

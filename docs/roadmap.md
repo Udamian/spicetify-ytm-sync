@@ -9,8 +9,8 @@ release. Full reasoning and risk matrix (B1-B14): [`viability-study.md`](viabili
 |---|---|
 | 0. Validation spikes | **In progress.** S2 and S3 done, S4 almost (check playlist order), S1 running (days), S5 script ready, S6/S7 manual. See [`spikes/README.md`](../spikes/README.md) |
 | 1. Solid companion | **Mostly done**: security layer, header validation (plain, PowerShell, cURL), settings, SQLite schema, HTTP skeleton, redacting logs, resumable job queue. Missing: wiring `/sync/*` (phase 2), packaging |
-| 2. Sync engine | **Done and tested against a simulated YouTube Music**: matching, ordered resumable dump, incremental on top, duplicate filter, retries, order check and repair, background worker and the `/sync/*`, `/status`, `/review` endpoints. **Next: a real run** into a throw-away playlist |
-| 3. Custom app UI | Scaffold (connection, pairing) + Spotify read layer (`app/src/lib/spotify.ts`); wizard not started |
+| 2. Sync engine | **Done and verified against the real YouTube Music** (spike S8, 60 tracks): ordered dump, resume, incremental on top, order repair. Not yet at 1,500 tracks |
+| 3. Custom app UI | Built: connection and pairing, YouTube header paste, source/destination wizard with progress, review list, startup sync (extension). Wizard dump verified by hand against the real YouTube Music with Liked Songs and playlists. Review list and startup sync verified with a simulated Spotify and helper app only; not yet tried for real |
 | 4-7 | Not started |
 
 ## Design notes for a large Liked Songs library (1,500+ tracks)

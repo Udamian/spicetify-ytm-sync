@@ -9,6 +9,18 @@
 
 export const LIKED_SONGS_URI = "spotify:collection:tracks";
 
+/**
+ * Accepts what people paste for a playlist: a `spotify:playlist:ID` URI or an
+ * `open.spotify.com/playlist/ID` link (optionally with `?si=...`). Returns the URI, or null.
+ */
+export function parsePlaylistInput(text: string): string | null {
+  const value = text.trim();
+  const uri = /^spotify:playlist:([A-Za-z0-9]{1,32})$/.exec(value);
+  if (uri) return value;
+  const link = /^https?:\/\/open\.spotify\.com\/(?:intl-[a-z]+\/)?playlist\/([A-Za-z0-9]{1,32})(?:[/?#].*)?$/.exec(value);
+  return link ? `spotify:playlist:${link[1]}` : null;
+}
+
 const PAGE_SIZE = 500; // 500 items took ~380 ms in S4
 const NEWEST_PAGE_SIZE = 50;
 

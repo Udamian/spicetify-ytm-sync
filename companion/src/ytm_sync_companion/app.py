@@ -235,6 +235,25 @@ def create_app(
         except Exception:  # upstream failures must not leak details
             return _error("youtube_error", 502)
 
+    @app.post("/playlists")
+    def playlists_create() -> Any:
+        body = request.get_json(silent=True)
+        title = body.get("title") if isinstance(body, dict) else None
+        privacy = body.get("privacy", "PRIVATE") if isinstance(body, dict) else None
+        if not (isinstance(title, str) and title.strip() and len(title.strip()) <= 150):
+            return _error("bad_title", 400)
+        if privacy not in ytm.PRIVACY_VALUES:
+            return _error("bad_request", 400)
+        if not settings.auth_path.exists():
+            return _error("not_configured", 409)
+        try:
+            playlist_id = ytm.create_playlist(
+                settings.auth_path, title.strip(), privacy, services.client_factory
+            )
+        except Exception:
+            return _error("youtube_error", 502)
+        return jsonify({"id": playlist_id, "title": title.strip(), "count": 0}), 201
+
     # ---- sync ---------------------------------------------------------------------------
 
     @app.post("/sync/preview")
@@ -309,6 +328,34 @@ def create_app(
                 "review_count": counts.get("review", 0),
                 "not_found_count": counts.get("not_found", 0),
             })
+
+    # ---- what the app needs to keep a copy up to date at startup ------------------------
+
+    @app.get("/pairs")
+    def pairs() -> Any:
+        with db() as conn:
+            rows = conn.execute(
+                "SELECT id, source_uri, dest_playlist_id, mode, last_order, last_synced_at "
+                "FROM pairs ORDER BY id"
+            ).fetchall()
+        return jsonify({"pairs": [
+            {"id": r["id"], "source_uri": r["source_uri"],
+             "dest_playlist_id": r["dest_playlist_id"], "mode": r["mode"],
+             "last_synced_at": r["last_synced_at"],
+             "synced_count": len(json.loads(r["last_order"] or "[]"))}
+            for r in rows
+        ]})
+
+    @app.get("/pairs/<int:pair_id>/synced")
+    def pair_synced(pair_id: int) -> Any:
+        """Spotify URIs of the last completed sync of this pair, in Spotify order."""
+        with db() as conn:
+            row = conn.execute(
+                "SELECT last_order FROM pairs WHERE id = ?", (pair_id,)
+            ).fetchone()
+        if row is None:
+            return _error("not_found", 404)
+        return jsonify({"uris": json.loads(row["last_order"] or "[]")})
 
     # ---- tracks the matcher was unsure about --------------------------------------------
 

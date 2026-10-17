@@ -221,3 +221,51 @@ def test_background_thread_picks_up_a_job(settings, fake):
     finally:
         services.worker.stop()
     assert not services.worker.running
+
+
+def test_pairs_and_synced_uris_after_a_dump(client, auth, connected, fake, worker):
+    assert client.get("/pairs", headers=auth).get_json() == {"pairs": []}
+    tracks = make_tracks(5)
+    for t in tracks:
+        fake.register(t)
+    start(client, auth, tracks)
+    worker.run_once()
+
+    listed = client.get("/pairs", headers=auth).get_json()["pairs"]
+    assert len(listed) == 1
+    pair = listed[0]
+    assert (pair["source_uri"], pair["dest_playlist_id"], pair["synced_count"]) == (SOURCE, DEST, 5)
+    assert pair["last_synced_at"]
+
+    synced = client.get(f"/pairs/{pair['id']}/synced", headers=auth).get_json()["uris"]
+    assert synced == [t.uri for t in tracks]  # Spotify order, first row first
+    assert client.get("/pairs/999/synced", headers=auth).status_code == 404
+
+
+def test_pairs_endpoints_need_the_token(client):
+    for path in ("/pairs", "/pairs/1/synced"):
+        assert client.get(path, headers={"Host": HOST_HEADER["Host"]}).status_code == 401
+
+
+def test_accepting_a_reviewed_track_and_rerunning_puts_it_in_its_place(
+    client, auth, connected, fake, worker
+):
+    tracks = make_tracks(6)
+    vids = [fake.register(t, video_id=f"vid{i:08d}") for i, t in enumerate(tracks)]
+    fake.register(tracks[2], video_id=vids[2], artists=("Somebody Else",))  # goes to review
+    start(client, auth, tracks)
+    worker.run_once()
+    assert fake.ids(DEST) == [v for i, v in enumerate(vids) if i != 2]
+    item = client.get("/review", headers=auth).get_json()["items"][0]
+    assert (item["uri"], item["video_id"]) == (tracks[2].uri, vids[2])
+
+    accepted = client.post("/review/resolve",
+                           json={"uri": item["uri"], "video_id": item["video_id"]}, headers=auth)
+    assert accepted.status_code == 200
+    start(client, auth, tracks)  # "apply the changes": the same source again
+    worker.run_once()
+
+    job = client.get("/status", headers=auth).get_json()["jobs"][0]
+    assert job["state"] == "done"
+    assert job["report"]["added"] == 1 and job["report"]["order_verified"] is True
+    assert fake.ids(DEST) == vids  # the accepted track sits between 1 and 3, not at the end
