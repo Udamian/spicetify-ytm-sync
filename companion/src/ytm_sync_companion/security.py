@@ -99,6 +99,10 @@ class Pairing:
         self._expires_at = self._clock() + PAIRING_CODE_TTL_SECONDS
         return self._code
 
+    def seconds_left(self) -> float:
+        """How long the current code stays valid (0 when it has expired)."""
+        return max(0.0, self._expires_at - self._clock())
+
     def redeem(self, candidate: str | None) -> str:
         """Return one of: "ok", "invalid", "expired", "locked"."""
         now = self._clock()

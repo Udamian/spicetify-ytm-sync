@@ -52,3 +52,23 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run build-local
+
+  # Builds the Windows package and runs the real executables, so a change that breaks packaging
+  # (a missing data file, a new import PyInstaller does not see) fails here and not at release.
+  package:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: python -m pip install ./companion pyinstaller
+      - run: python scripts/build_release.py
+      - name: Smoke test the packaged program
+        shell: bash
+        run: python scripts/smoke_packaged.py build/release/ytm-sync-*-windows

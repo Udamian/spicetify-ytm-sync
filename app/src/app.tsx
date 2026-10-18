@@ -1,5 +1,6 @@
 import React from "react";
 import styles from "./css/app.module.scss";
+import { OrderCheck } from "./components/OrderCheck";
 import { Stepper, StepId } from "./components/Stepper";
 import { Review } from "./screens/Review";
 import { Wizard } from "./screens/Wizard";
@@ -157,6 +158,7 @@ function App() {
               <span>{t("autoLabel")}</span>
             </label>
             <p className={styles.muted}>{t("autoHint")}</p>
+            <OrderCheck />
           </section>
         </>
       )}

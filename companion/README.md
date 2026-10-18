@@ -20,6 +20,21 @@ pytest
 ruff check .
 ```
 
+## Commands
+
+| Command | What it does |
+|---|---|
+| `ytm-sync-companion` or `... run` | Run in the foreground and print the pairing code |
+| `... run --background` | Run with no console or window (what starts at login). Publishes the pairing code in `<data dir>/pairing-code.json` (readable by your user only) |
+| `... code [--pause]` | Print the current pairing code, starting the background service first if needed |
+| `... status` | Say whether it is running (exit code 0/1) |
+| `... stop` | Stop it cleanly: a running copy is paused and resumes at the next start |
+| `... install [--dry-run] [--no-apply] [--app-dir DIR]` | Add the app to Spicetify and, in the packaged Windows build, install the companion with a Start Menu shortcut and a startup entry. Running it again updates |
+| `... uninstall [--dry-run] [--purge]` | Remove all of that; `--purge` also deletes the session, database and logs |
+
+Packaged build: `python scripts/build_release.py` (needs PyInstaller; builds for the platform it
+runs on) and `python scripts/smoke_packaged.py <release folder>` to test the real executables.
+
 ## Configuration
 
 | Variable | Default | Meaning |
@@ -36,6 +51,7 @@ must be on the allow-list. Errors are JSON: `{"error": "<code>"}`.
 | Method | Path | Auth | Notes |
 |---|---|---|---|
 | GET | `/health` | none | `{ok, version, api_version}` |
+| POST | `/shutdown` | bearer | Stops the companion cleanly (used by `stop`, install and uninstall). `501` when not run by the command line |
 | POST | `/pair` | allowed `Origin` + pairing code | Body `{"code": "..."}`. Returns `{token}`. `403 invalid_code`, `410 expired`, `429 locked` |
 | GET | `/auth/status` | bearer | `{status}`: `not_configured` / `ok` / `expired` / `error` |
 | POST | `/auth/headers` | bearer | Body `{"headers": "<raw request headers>"}`. `400 missing_headers` lists header *names* only |
@@ -45,6 +61,7 @@ must be on the allow-list. Errors are JSON: `{"error": "<code>"}`.
 | POST | `/sync/preview` | bearer | Body `{tracks}`. Returns `{total, already_matched, to_search, estimated_seconds}`. No network |
 | POST | `/sync/start` | bearer | Body `{source_uri, dest_playlist_id, kind, tracks, mode?}`. `kind`: `initial_dump` / `incremental`. `202 {job_id}`; `409 already_running` (with `job_id`) or `not_configured`; `400 bad_tracks` (with `index`), `bad_source`, `bad_destination` |
 | POST | `/sync/cancel` | bearer | Body `{job_id}`. `{cancelled}` |
+| POST | `/sync/retry` | bearer | Body `{job_id}`: queue a failed job again with the data it already stored (`202 {job_id}`); `409 cannot_retry` if it is not failed, has no stored data, or its pair is busy |
 | GET | `/status` | bearer | `{jobs: [last 5], worker_running, review_count, not_found_count}`; with `?job_id=N`: `{job}` or `404`. A job has `state`, `done`, `total`, `progress`, `error_code` (`session_expired`, `write_failed`, ...) and, when finished, `report` |
 | GET | `/pairs` | bearer | `{pairs: [{id, source_uri, dest_playlist_id, mode, last_synced_at, synced_count}]}`; `last_synced_at` is null until the first copy finishes |
 | GET | `/pairs/<id>/synced` | bearer | `{uris}`: Spotify URIs of the last completed copy, in Spotify order (the startup check stops at the first one it finds there) |

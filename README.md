@@ -27,9 +27,25 @@ talks to YouTube Music happens in a small companion service on your own computer
 
 ## Install
 
-Not available yet. The planned installer will set up the companion and add the app to Spicetify
-in one step ([roadmap, phase 5](docs/roadmap.md)). Requirements will be: Spotify desktop,
-[Spicetify](https://spicetify.app) and a YouTube Music account.
+Windows first. You need Spotify desktop, [Spicetify](https://spicetify.app/docs/getting-started)
+(installed, with Spotify opened once) and a YouTube Music account.
+
+1. Download `ytm-sync-<version>-windows.zip` from the [Releases](../../releases) page and unzip it.
+2. Double-click **Install YTM Sync.cmd**. It adds the app to Spicetify, runs `spicetify apply`,
+   installs the companion for your user (no administrator rights) and starts it at every login,
+   without a window.
+3. Restart Spotify, open **YTM Sync** in the left sidebar and follow the steps. To pair, open
+   **YTM Sync Companion** from the Start Menu and type the code it shows.
+
+Windows may warn that the program is from an unknown publisher: the release is not code-signed
+yet. Choose *More info* and *Run anyway*. The zip comes with a `.sha256` file to check it.
+
+**Update:** download the new release and run *Install YTM Sync.cmd* again. Your session and
+progress are kept. **Uninstall:** run *Uninstall YTM Sync.cmd*. To also delete the stored YouTube
+Music session and copy progress, run `ytm-sync.exe uninstall --purge` in that folder.
+
+macOS and Linux have no installer yet: run the companion from source (see Development) and copy
+`app/dist` into Spicetify's `CustomApps/ytm-sync` folder.
 
 ## Development
 
@@ -38,7 +54,7 @@ in one step ([roadmap, phase 5](docs/roadmap.md)). Requirements will be: Spotify
 cd companion
 python -m venv .venv && source .venv/bin/activate     # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
-ytm-sync-companion          # prints a pairing code
+ytm-sync-companion          # runs in the foreground and prints a pairing code
 pytest && ruff check .
 
 # Spicetify custom app

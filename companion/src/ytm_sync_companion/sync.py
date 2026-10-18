@@ -31,10 +31,10 @@ from typing import Any, Protocol
 
 from . import matching
 from .matching import MatchResult, SpotifyTrack
+from .ytm import looks_expired
 
 log = logging.getLogger(__name__)
 
-AUTH_MARKERS = ("401", "403", "Unauthorized", "Forbidden")
 MAX_FIX_MOVES = 300
 
 
@@ -198,7 +198,7 @@ class SyncEngine:
         except SyncError:
             raise
         except Exception as exc:
-            if any(marker in str(exc) for marker in AUTH_MARKERS):
+            if looks_expired(str(exc)):
                 raise SessionExpired("YouTube Music rejected the session") from exc
             raise SyncError(f"YouTube Music call failed: {type(exc).__name__}") from exc
 
@@ -428,6 +428,7 @@ class SyncEngine:
             else:
                 ok = not self._order_mismatch(dest, desired)
             if ok:
+                log.info("order check ok (top_only=%s, attempt %d)", top_only, attempt + 1)
                 return True, 0
             if attempt < 3:
                 self.sleep(1.5)
@@ -438,6 +439,11 @@ class SyncEngine:
             moves = [(by_video[v], first_other) for v in desired if v in by_video and first_other]
         else:
             moves = plan_moves(dest, desired)
+        log.warning(
+            "order check failed (top_only=%s): %d moves planned, first new item at position %s",
+            top_only, len(moves),
+            next((i for i, (_, v) in enumerate(dest) if v in set(desired)), None),
+        )
         if not moves or len(moves) > MAX_FIX_MOVES:
             return False, 0
         applied = 0

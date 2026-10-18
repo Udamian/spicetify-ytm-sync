@@ -1,7 +1,7 @@
 import React from "react";
 import styles from "../css/app.module.scss";
 import { Bar } from "../components/Bar";
-import { resyncPair, syncedPairs, waitForJob } from "../lib/autosync";
+import { resyncAll } from "../lib/autosync";
 import { ReviewItem, listReview, resolveReview } from "../lib/companion";
 import { Key, t } from "../lib/i18n";
 
@@ -77,23 +77,9 @@ export function Review({ refreshKey, onAuthLost }: Props) {
     setError(null);
     setApplying({ state: "running", progress: 0 });
     try {
-      const pairs = await syncedPairs();
-      if (!pairs || pairs.length === 0) throw new Error("no pairs");
-      let added = 0;
-      for (const pair of pairs) {
-        const started = await resyncPair(pair);
-        const jobId =
-          started.kind === "started" ? started.jobId : started.kind === "busy" ? started.jobId : undefined;
-        if (jobId === undefined) throw new Error("not started");
-        const job = await waitForJob(jobId, {
-          everyMs: 2000,
-          onProgress: (j) => setApplying({ state: "running", progress: j.progress }),
-        });
-        if (!job || job.state !== "done") throw new Error("not finished");
-        added += job.report?.added ?? 0;
-      }
+      const result = await resyncAll((progress) => setApplying({ state: "running", progress }));
       setAccepted(0);
-      setApplying({ state: "done", added });
+      setApplying({ state: "done", added: result.added });
     } catch {
       setApplying({ state: "failed" });
     }

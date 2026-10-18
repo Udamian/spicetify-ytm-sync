@@ -107,3 +107,30 @@ export async function waitForJob(
   }
   return null;
 }
+
+export type ResyncResult = { added: number; moves: number; verified: boolean };
+
+/**
+ * Re-send every finished pair and wait for it. The helper app adds what is missing and moves
+ * misplaced songs into the order Spotify has. Throws when something does not finish.
+ */
+export async function resyncAll(onProgress?: (progress: number) => void): Promise<ResyncResult> {
+  const pairs = await syncedPairs();
+  if (!pairs || pairs.length === 0) throw new Error("no pairs");
+  const total: ResyncResult = { added: 0, moves: 0, verified: true };
+  for (const [index, pair] of pairs.entries()) {
+    const started = await resyncPair(pair);
+    const jobId =
+      started.kind === "started" || started.kind === "busy" ? started.jobId : undefined;
+    if (jobId === undefined) throw new Error("not started");
+    const job = await waitForJob(jobId, {
+      everyMs: 2000,
+      onProgress: (j) => onProgress?.((index + j.progress) / pairs.length),
+    });
+    if (!job || job.state !== "done" || !job.report) throw new Error("not finished");
+    total.added += job.report.added;
+    total.moves += job.report.order_moves;
+    total.verified = total.verified && job.report.order_verified;
+  }
+  return total;
+}

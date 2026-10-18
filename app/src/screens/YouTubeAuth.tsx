@@ -74,6 +74,8 @@ export function YouTubeAuth({ status, onChanged }: Props) {
       <h2>{t("ytTitle")}</h2>
       <p className={connected ? styles.success : styles.muted}>{t(STATUS_TEXT[status])}</p>
 
+      {status === "expired" && <p className={styles.muted}>{t("ytExpiredHint")}</p>}
+
       {!connected && (
         <form className={styles.form} onSubmit={onSubmit}>
           <p className={styles.muted}>{t("ytGuideIntro")}</p>

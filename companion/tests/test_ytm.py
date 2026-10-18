@@ -57,3 +57,19 @@ def test_list_playlists_normalizes_and_skips_entries_without_id(tmp_path: Path):
         {"id": "PLabc123", "title": "Liked mirror", "count": 42},
         {"id": "PLdef456", "title": "Gym", "count": None},
     ]
+
+
+@pytest.mark.parametrize(
+    ("message", "expected"),
+    [
+        ("Server returned HTTP 401: Unauthorized.", True),
+        ("Server returned HTTP 403: Forbidden.", True),
+        ("server returned http 403 forbidden", True),
+        ("Server returned HTTP 500: Internal Server Error.", False),
+        ("Server returned HTTP 400: Bad Request.", False),
+        ("playlist has 1403 tracks, item 4010 failed", False),  # numbers alone are not enough
+        ("", False),
+    ],
+)
+def test_looks_expired(message, expected):
+    assert ytm.looks_expired(message) is expected

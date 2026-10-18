@@ -8,6 +8,7 @@ import {
   createPlaylist,
   jobStatus,
   listPlaylists,
+  retrySync,
   previewSync,
   startSync,
   syncStatus,
@@ -33,11 +34,14 @@ type Phase =
   | { kind: "reading"; read: number; total: number }
   | { kind: "preview"; sourceUri: string; tracks: SyncTrack[]; preview: Preview; dest: Destination }
   | { kind: "starting" }
+  | { kind: "interrupted"; job: Job }
   | { kind: "running"; jobId: number; resumed: boolean }
   | { kind: "finished"; job: Job };
 
 const POLL_MS = 2000;
 const ACTIVE = new Set(["queued", "running"]);
+// Failures worth offering "Resume" for. `internal_error` is a bug: resuming would just repeat it.
+const RESUMABLE = new Set(["session_expired", "write_failed", "sync_error"]);
 
 export function formatEstimate(seconds: number): string {
   if (seconds < 60) return t("wzTimeLess");
@@ -74,6 +78,10 @@ export function Wizard({ onAuthLost, onFinished }: Props) {
       if (status.ok) {
         const active = status.data.jobs.find((job) => ACTIVE.has(job.state));
         if (active) return setPhase({ kind: "running", jobId: active.id, resumed: true });
+        const last = status.data.jobs[0]; // newest first
+        if (last?.state === "failed" && last.error_code && RESUMABLE.has(last.error_code)) {
+          return setPhase({ kind: "interrupted", job: last });
+        }
       }
       const lists = await listPlaylists();
       if (!alive) return;
@@ -212,6 +220,17 @@ export function Wizard({ onAuthLost, onFinished }: Props) {
     if (phase.kind === "running") await cancelSync(phase.jobId);
   };
 
+  const onResume = async (job: Job) => {
+    setError(null);
+    const result = await retrySync(job.id);
+    if (result.ok) {
+      setLiveJob(null);
+      return setPhase({ kind: "running", jobId: result.data.job_id, resumed: false });
+    }
+    if (result.error === "unauthorized") return onAuthLost();
+    setError("wzResumeError");
+  };
+
   const reset = () => {
     created.current = null;
     setError(null);
@@ -280,8 +299,28 @@ export function Wizard({ onAuthLost, onFinished }: Props) {
     );
   }
 
+  if (phase.kind === "interrupted") {
+    return (
+      <section className={styles.card}>
+        <h2>{t("wzResumeTitle")}</h2>
+        <p>
+          {t(phase.job.error_code === "session_expired" ? "wzResumeExpired" : "wzResumeFailed")}
+        </p>
+        {error && <p className={styles.error}>{t(error)}</p>}
+        <div className={styles.row}>
+          <button className={styles.button} onClick={() => onResume(phase.job)}>
+            {t("wzResume")}
+          </button>
+          <button className={styles.linkButton} onClick={reset}>
+            {t("wzNew")}
+          </button>
+        </div>
+      </section>
+    );
+  }
+
   if (phase.kind === "finished") {
-    return <Finished job={phase.job} onNew={reset} />;
+    return <Finished job={phase.job} onNew={reset} onResume={onResume} error={error} />;
   }
 
   // setup
@@ -391,7 +430,17 @@ export function Wizard({ onAuthLost, onFinished }: Props) {
   );
 }
 
-function Finished({ job, onNew }: { job: Job; onNew: () => void }) {
+function Finished({
+  job,
+  onNew,
+  onResume,
+  error,
+}: {
+  job: Job;
+  onNew: () => void;
+  onResume: (job: Job) => void;
+  error: Key | null;
+}) {
   if (job.state === "cancelled") {
     return (
       <section className={styles.card}>
@@ -409,9 +458,17 @@ function Finished({ job, onNew }: { job: Job; onNew: () => void }) {
         <h2>{t("wzFailedTitle")}</h2>
         {job.error && <p className={styles.error}>{job.error}</p>}
         <p className={styles.muted}>{t("wzFailedHint")}</p>
-        <button className={styles.button} onClick={onNew}>
-          {t("wzNew")}
-        </button>
+        {error && <p className={styles.error}>{t(error)}</p>}
+        <div className={styles.row}>
+          {job.error_code && RESUMABLE.has(job.error_code) && (
+            <button className={styles.button} onClick={() => onResume(job)}>
+              {t("wzResume")}
+            </button>
+          )}
+          <button className={job.error_code && RESUMABLE.has(job.error_code) ? styles.linkButton : styles.button} onClick={onNew}>
+            {t("wzNew")}
+          </button>
+        </div>
       </section>
     );
   }

@@ -10,8 +10,10 @@ release. Full reasoning and risk matrix (B1-B14): [`viability-study.md`](viabili
 | 0. Validation spikes | **In progress.** S2 and S3 done, S4 almost (check playlist order), S1 running (days), S5 script ready, S6/S7 manual. See [`spikes/README.md`](../spikes/README.md) |
 | 1. Solid companion | **Mostly done**: security layer, header validation (plain, PowerShell, cURL), settings, SQLite schema, HTTP skeleton, redacting logs, resumable job queue. Missing: wiring `/sync/*` (phase 2), packaging |
 | 2. Sync engine | **Done and verified against the real YouTube Music** (spike S8, 60 tracks): ordered dump, resume, incremental on top, order repair. Not yet at 1,500 tracks |
-| 3. Custom app UI | Built: connection and pairing, YouTube header paste, source/destination wizard with progress, review list, startup sync (extension). Wizard dump verified by hand against the real YouTube Music with Liked Songs and playlists. Review list and startup sync verified with a simulated Spotify and helper app only; not yet tried for real |
-| 4-7 | Not started |
+| 3. Custom app UI | Built: connection and pairing, YouTube header paste, source/destination wizard with progress, review list, startup sync (extension). Wizard dump, review list and startup sync tried by hand by the project owner against the real Spotify and YouTube Music (reported working, October 2026) |
+| 4. Friendly authentication | 4a built: step-by-step guide, header validator, expired-session notice at startup, reconnect then resume the interrupted copy (`/sync/retry`), "check the order now". Verified with simulated services only. 4b (helper browser extension) deferred to v2. Exit criterion (a new user connects without help) is measured in the beta |
+| 5. Packaging | Built, Windows only: `ytm-sync.exe install/uninstall`, background service, Start Menu shortcut for the pairing code, startup entry, PyInstaller build, release workflow (draft release) and CI smoke test. Verified here on Linux: tests (installer against a fake Spicetify, background service end to end) and the real packaged executable. **First real run on Windows** (owner's machine) found a bug with accented user names (`Damián` read as `DamiÃ¡n` from Spicetify's UTF-8 output); fixed with regression tests. Still unconfirmed on Windows: the shortcuts, the `%LOCALAPPDATA%` copy and the Windows CI jobs. Missing: real preview image, code signing, update check inside the app |
+| 6-7 | Not started |
 
 ## Design notes for a large Liked Songs library (1,500+ tracks)
 

@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import math
 import re
+import threading
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -83,6 +84,8 @@ class Services:
     # Called with the fresh pairing code whenever it rotates, so the CLI can show it.
     on_new_code: Callable[[str], None] | None = None
     worker: Worker | None = None
+    # Set by the command line when it runs the server: stops the process cleanly.
+    on_shutdown: Callable[[], None] | None = None
 
 
 def _job_json(job: jobs.Job) -> dict[str, Any]:
@@ -105,6 +108,7 @@ def create_app(
     tokens: TokenStore | None = None,
     client_factory: ytm.ClientFactory = ytm.load_client,
     on_new_code: Callable[[str], None] | None = None,
+    on_shutdown: Callable[[], None] | None = None,
     worker_enabled: bool = False,
     engine_kwargs: dict[str, Any] | None = None,
 ) -> Flask:
@@ -115,6 +119,7 @@ def create_app(
         tokens=tokens or TokenStore(settings.token_path),
         client_factory=client_factory,
         on_new_code=on_new_code,
+        on_shutdown=on_shutdown,
     )
     startup = init_db(settings.db_path)
     try:
@@ -205,6 +210,14 @@ def create_app(
     def auth_status() -> Response:
         status = ytm.session_status(settings.auth_path, services.client_factory)
         return jsonify({"status": status})
+
+    @app.post("/shutdown")
+    def shutdown() -> Any:
+        """Stop the companion (used by the uninstaller and updater; needs the bearer token)."""
+        if not services.on_shutdown:
+            return _error("not_supported", 501)
+        threading.Timer(0.3, services.on_shutdown).start()  # after this answer is sent
+        return jsonify({"ok": True})
 
     @app.post("/auth/headers")
     def auth_headers() -> Any:
@@ -312,6 +325,23 @@ def create_app(
             return _error("bad_request", 400)
         with db() as conn:
             return jsonify({"cancelled": jobs.cancel(conn, job_id)})
+
+    @app.post("/sync/retry")
+    def sync_retry() -> Any:
+        """Resume a failed job (typically after reconnecting an expired YouTube Music session)."""
+        body = request.get_json(silent=True)
+        job_id = body.get("job_id") if isinstance(body, dict) else None
+        if not isinstance(job_id, int):
+            return _error("bad_request", 400)
+        if not settings.auth_path.exists():
+            return _error("not_configured", 409)
+        with db() as conn:
+            job = jobs.retry(conn, job_id)
+        if job is None:
+            return _error("cannot_retry", 409)
+        if services.worker:
+            services.worker.wake()
+        return jsonify({"job_id": job.id}), 202
 
     @app.get("/status")
     def status() -> Any:

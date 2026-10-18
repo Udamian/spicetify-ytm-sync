@@ -133,6 +133,23 @@ const en = {
   autoNotifyReview: "YTM Sync: {n} songs need your review.",
   autoNotifyExpired: "YTM Sync: your YouTube Music session expired. Open YTM Sync to reconnect.",
   autoNotifyFailed: "YTM Sync: the update stopped. Open YTM Sync for details.",
+  autoNotifyOrder:
+    "YTM Sync: songs were added, but their order could not be confirmed. Open YTM Sync and use \"Check the order now\".",
+
+  ocButton: "Check the order now",
+  ocHint: "Compares the YouTube Music playlist with Spotify and moves songs that are out of place.",
+  ocFixed: "Done: {added} songs added and {moves} moved into place. The order matches Spotify.",
+  ocAlready: "Everything was already in the right order.",
+  ocNotVerified: "The order could not be fully confirmed. Try again in a minute.",
+  ocFailed: "Could not check the order. Is the helper app running and YouTube Music connected?",
+
+  ytExpiredHint: "Your copies, matches and progress are kept. Reconnect and carry on.",
+  wzResumeTitle: "A copy was interrupted",
+  wzResumeExpired:
+    "It stopped because the YouTube Music session expired. You are connected again, so it can carry on where it left off.",
+  wzResumeFailed: "It stopped before finishing. What is already done is not repeated.",
+  wzResume: "Resume",
+  wzResumeError: "Could not resume it. Start the copy again.",
 } as const;
 
 export type Key = keyof typeof en;
@@ -279,6 +296,25 @@ const es: Table = {
   autoNotifyExpired:
     "YTM Sync: tu sesión de YouTube Music caducó. Abre YTM Sync para volver a conectar.",
   autoNotifyFailed: "YTM Sync: la actualización se detuvo. Abre YTM Sync para ver los detalles.",
+  autoNotifyOrder:
+    "YTM Sync: se añadieron canciones, pero no se pudo confirmar su orden. Abre YTM Sync y usa «Comprobar el orden ahora».",
+
+  ocButton: "Comprobar el orden ahora",
+  ocHint:
+    "Compara la playlist de YouTube Music con Spotify y mueve las canciones que estén fuera de sitio.",
+  ocFixed: "Listo: {added} canciones añadidas y {moves} colocadas en su sitio. El orden coincide con Spotify.",
+  ocAlready: "Todo estaba ya en el orden correcto.",
+  ocNotVerified: "No se pudo confirmar del todo el orden. Inténtalo de nuevo en un minuto.",
+  ocFailed:
+    "No se pudo comprobar el orden. ¿Está en marcha la app auxiliar y conectado YouTube Music?",
+
+  ytExpiredHint: "Tus copias, coincidencias y progreso se conservan. Reconecta y sigue.",
+  wzResumeTitle: "Una copia quedó interrumpida",
+  wzResumeExpired:
+    "Se detuvo porque caducó la sesión de YouTube Music. Ya estás conectado de nuevo, así que puede continuar donde lo dejó.",
+  wzResumeFailed: "Se detuvo antes de terminar. Lo que ya está hecho no se repite.",
+  wzResume: "Reanudar",
+  wzResumeError: "No se pudo reanudar. Empieza la copia de nuevo.",
 };
 
 const tables: Record<"en" | "es", Table> = { en, es };

@@ -14,6 +14,8 @@ account, so the main job is making sure nothing but the YTM Sync app can reach t
 | **DNS rebinding**: a hostile domain resolves to `127.0.0.1` | `Host` header must be `127.0.0.1:<port>` or `localhost:<port>` | `security.host_allowed` |
 | **Another local process** reads the port | Bearer token stored `0600`; compared in constant time. This does **not** defend against a process running as the same user, which can read the files anyway | `security.TokenStore` |
 | **Guessing the pairing code** | One-time 8-hex code, expires after 10 minutes, rotates after every use, locks out for 60 s after 5 failures. `/pair` also requires a browser `Origin` | `security.Pairing` |
+| **Pairing code on disk** (background mode has no console to show it) | `pairing-code.json` in the data folder, created `0600` like the token, removed on a clean stop, replaced after every use or expiry. A process of the same user could already read the stored YouTube Music session, so this adds no new reach; other users and web pages cannot read it | `runtime.publish_code` |
+| **Anything but the owner stopping the service** | `POST /shutdown` needs the bearer token like every sensitive endpoint; `stop` reads the token from the user's own data folder. No process is ever killed by PID | `app.py`, `runtime.request_shutdown` |
 | **Credentials leaking through logs or errors** | Header *values* are never logged or returned; errors name only the missing header; upstream failures return a generic `youtube_error`; `HeaderCheck.__repr__` hides the headers | `headers.py`, `app.py` |
 | **Credentials committed by mistake** | `.gitignore` covers `browser.json`, `headers.txt`, `.env`, `spikes/.s1/` | `.gitignore` |
 | **Exposure on the network** | Binds to `127.0.0.1` only | `config.HOST` |

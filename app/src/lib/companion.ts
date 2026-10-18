@@ -213,3 +213,11 @@ export const listPairs = () => request<{ pairs: Pair[] }>("/pairs", { auth: true
 /** Spotify URIs of the pair's last completed sync, in Spotify order. */
 export const pairSynced = (pairId: number) =>
   request<{ uris: string[] }>(`/pairs/${pairId}/synced`, { auth: true });
+
+/** Resume a failed job with the data the helper app already stored. */
+export const retrySync = (jobId: number) =>
+  request<{ job_id: number }>("/sync/retry", {
+    method: "POST",
+    body: { job_id: jobId },
+    auth: true,
+  });

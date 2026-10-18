@@ -6,12 +6,24 @@ Keeping every call to it behind this module makes that breakage easy to contain 
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any, Literal
 
 SessionStatus = Literal["not_configured", "ok", "expired", "error"]
 ClientFactory = Callable[[Path], Any]
+
+# What ytmusicapi raises when YouTube rejects the stored session: "Server returned HTTP 401:
+# Unauthorized." / "...403: Forbidden." (ytmusic.py). Matching the status code next to "HTTP"
+# avoids mistaking an unrelated number (a count, an id) for an expired session.
+_EXPIRED = re.compile(r"HTTP\s+(?:401|403)\b|\bUnauthorized\b|\bForbidden\b", re.I)
+
+
+def looks_expired(error_text: str) -> bool:
+    """True when an error message says YouTube Music rejected our credentials."""
+    return bool(_EXPIRED.search(error_text))
+
 
 # Playlist ids come back from "browse" endpoints with a visual "VL" prefix (VLPL... -> PL...).
 # Only the bare id is valid for editing a playlist.
@@ -42,10 +54,7 @@ def session_status(auth_path: Path, client_factory: ClientFactory = load_client)
     try:
         client_factory(auth_path).get_library_playlists(limit=1)
     except Exception as exc:  # classify any failure, never leak its message
-        text = str(exc)
-        if any(marker in text for marker in ("401", "403", "Unauthorized", "Forbidden")):
-            return "expired"
-        return "error"
+        return "expired" if looks_expired(str(exc)) else "error"
     return "ok"
 
 

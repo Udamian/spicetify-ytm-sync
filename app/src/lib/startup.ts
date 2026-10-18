@@ -48,6 +48,7 @@ export async function runStartupSync(notify: Notify): Promise<void> {
       }
       if (job.state === "done" && job.report) {
         if (job.report.added > 0) notify(t("autoNotifyDone", { added: job.report.added }));
+        if (!job.report.order_verified) notify(t("autoNotifyOrder"), true);
         if (job.report.to_review + job.report.not_found > 0) {
           notify(t("autoNotifyReview", { n: job.report.to_review + job.report.not_found }));
         }

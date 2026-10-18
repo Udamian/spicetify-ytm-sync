@@ -39,8 +39,8 @@ class RedactingFormatter(logging.Formatter):
         return redact(super().format(record))
 
 
-def setup_logging(data_dir: Path, level: int = logging.INFO) -> Path:
-    """Log to `<data_dir>/logs/companion.log` (1 MB x 3 files) and to the console."""
+def setup_logging(data_dir: Path, level: int = logging.INFO, *, console: bool = True) -> Path:
+    """Log to `<data_dir>/logs/companion.log` (1 MB x 3 files) and, unless disabled, the console."""
     log_dir = data_dir / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
     log_path = log_dir / "companion.log"
@@ -51,10 +51,12 @@ def setup_logging(data_dir: Path, level: int = logging.INFO) -> Path:
     for handler in list(root.handlers):  # idempotent: tests and reloads call this repeatedly
         root.removeHandler(handler)
         handler.close()
-    for handler in (
-        RotatingFileHandler(log_path, maxBytes=1_000_000, backupCount=3, encoding="utf-8"),
-        logging.StreamHandler(),
-    ):
+    handlers: list[logging.Handler] = [
+        RotatingFileHandler(log_path, maxBytes=1_000_000, backupCount=3, encoding="utf-8")
+    ]
+    if console:
+        handlers.append(logging.StreamHandler())
+    for handler in handlers:
         handler.setFormatter(formatter)
         root.addHandler(handler)
     root.propagate = False

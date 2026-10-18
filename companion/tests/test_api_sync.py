@@ -269,3 +269,38 @@ def test_accepting_a_reviewed_track_and_rerunning_puts_it_in_its_place(
     assert job["state"] == "done"
     assert job["report"]["added"] == 1 and job["report"]["order_verified"] is True
     assert fake.ids(DEST) == vids  # the accepted track sits between 1 and 3, not at the end
+
+
+def test_reconnect_then_resume_finishes_without_repeating_work(
+    client, auth, connected, fake, worker
+):
+    tracks = make_tracks(8)
+    vids = [fake.register(t, video_id=f"vid{i:08d}") for i, t in enumerate(tracks)]
+    fake.fail_with = Exception("Server returned HTTP 401: Unauthorized.")
+    job_id = start(client, auth, tracks).get_json()["job_id"]
+    worker.run_once()
+    failed = client.get(f"/status?job_id={job_id}", headers=auth).get_json()["job"]
+    assert (failed["state"], failed["error_code"]) == ("failed", "session_expired")
+
+    fake.fail_with = None  # the person reconnected
+    resumed = client.post("/sync/retry", json={"job_id": job_id}, headers=auth)
+    assert resumed.status_code == 202 and resumed.get_json() == {"job_id": job_id}
+    worker.run_once()
+
+    job = client.get(f"/status?job_id={job_id}", headers=auth).get_json()["job"]
+    assert (job["state"], job["error"], job["error_code"]) == ("done", None, None)
+    assert job["report"]["added"] == 8 and job["report"]["order_verified"] is True
+    assert fake.ids(DEST) == vids
+
+
+def test_retry_validation(client, auth, connected, fake, worker):
+    assert client.post("/sync/retry", json={}, headers=auth).status_code == 400
+    assert client.post("/sync/retry", json={"job_id": "1"}, headers=auth).status_code == 400
+    unknown = client.post("/sync/retry", json={"job_id": 999}, headers=auth)
+    assert (unknown.status_code, unknown.get_json()["error"]) == (409, "cannot_retry")
+    tracks = make_tracks(2)
+    for t in tracks:
+        fake.register(t)
+    job_id = start(client, auth, tracks).get_json()["job_id"]
+    worker.run_once()  # finished fine: cannot be retried
+    assert client.post("/sync/retry", json={"job_id": job_id}, headers=auth).status_code == 409

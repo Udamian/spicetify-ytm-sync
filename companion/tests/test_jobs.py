@@ -96,3 +96,35 @@ def test_report_and_error_code_roundtrip(conn, pair_id):
     assert (saved.error_code, saved.report) == ("session_expired", {"a": 1})
     assert jobs.payload(conn, job.id) == "[]"
     assert [j.id for j in jobs.recent(conn)] == [job.id]
+
+
+def test_retry_requeues_a_failed_job_with_its_data(conn, pair_id):
+    job = jobs.enqueue(conn, pair_id, "initial_dump", total=2, payload='[{"uri": "x"}]')
+    jobs.claim_next(conn)
+    jobs.finish(conn, job.id, "failed", "boom", error_code="session_expired")
+
+    again = jobs.retry(conn, job.id)
+    assert (again.state, again.error, again.error_code, again.finished_at) == (
+        "queued", None, None, None
+    )
+    assert jobs.payload(conn, job.id) == '[{"uri": "x"}]'
+    assert jobs.retry(conn, job.id) is None  # already queued: nothing to retry
+
+
+def test_retry_refuses_other_states_missing_data_and_busy_pairs(conn, pair_id):
+    done = jobs.enqueue(conn, pair_id, "initial_dump", payload="[]")
+    jobs.claim_next(conn)
+    jobs.finish(conn, done.id, "done")
+    assert jobs.retry(conn, done.id) is None  # finished fine
+    assert jobs.retry(conn, 999) is None
+
+    no_data = jobs.enqueue(conn, pair_id, "initial_dump")
+    jobs.claim_next(conn)
+    jobs.finish(conn, no_data.id, "failed", "x")
+    assert jobs.retry(conn, no_data.id) is None  # nothing stored to resume from
+
+    failed = jobs.enqueue(conn, pair_id, "initial_dump", payload="[]")
+    jobs.claim_next(conn)
+    jobs.finish(conn, failed.id, "failed", "x")
+    jobs.enqueue(conn, pair_id, "incremental", payload="[]")  # the pair is busy again
+    assert jobs.retry(conn, failed.id) is None

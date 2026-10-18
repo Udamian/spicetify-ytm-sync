@@ -159,6 +159,26 @@ def requeue(conn: sqlite3.Connection, job_id: int) -> None:
     conn.commit()
 
 
+def retry(conn: sqlite3.Connection, job_id: int) -> Job | None:
+    """Queue a failed job again with the data it already has (no need to read Spotify again).
+
+    Returns the job, or None when it is not failed, has no stored data, or its pair already has
+    another active job. What was done before the failure is skipped by the engine.
+    """
+    job = get(conn, job_id)
+    if job is None or job.state != "failed" or not payload(conn, job_id):
+        return None
+    if active_for_pair(conn, job.pair_id):
+        return None
+    conn.execute(
+        "UPDATE jobs SET state = 'queued', error = NULL, error_code = NULL, report = NULL, "
+        "finished_at = NULL WHERE id = ?",
+        (job_id,),
+    )
+    conn.commit()
+    return get(conn, job_id)
+
+
 def cancel(conn: sqlite3.Connection, job_id: int) -> bool:
     """Cancel an active job. A running worker must check `is_cancelled` between steps."""
     cursor = conn.execute(
