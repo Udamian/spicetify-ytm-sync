@@ -52,6 +52,9 @@ must be on the allow-list. Errors are JSON: `{"error": "<code>"}`.
 |---|---|---|---|
 | GET | `/health` | none | `{ok, version, api_version}` |
 | POST | `/shutdown` | bearer | Stops the companion cleanly (used by `stop`, install and uninstall). `501` when not run by the command line |
+| GET | `/autostart` | bearer | `{supported, enabled}`: the start-with-Windows switch. `supported` is true only for the installed Windows program |
+| POST | `/autostart` | bearer | Body `{"enabled": true|false}`. Creates or removes the Startup shortcut. `409` when not supported |
+| GET | `/diagnostics` | bearer | State summary for bug reports: versions, pairs, counts, recent jobs and a redacted log tail. No secrets, ids, titles or personal paths |
 | POST | `/pair` | allowed `Origin` + pairing code | Body `{"code": "..."}`. Returns `{token}`. `403 invalid_code`, `410 expired`, `429 locked` |
 | GET | `/auth/status` | bearer | `{status}`: `not_configured` / `ok` / `expired` / `error` |
 | POST | `/auth/headers` | bearer | Body `{"headers": "<raw request headers>"}`. `400 missing_headers` lists header *names* only |

@@ -1,7 +1,9 @@
 {
   "name": "YTM Sync",
-  "description": "Keep a Spotify playlist (or Liked Songs) mirrored, in the same order, to a YouTube Music playlist. Needs a small companion app on your computer.",
+  "description": "Keep a Spotify playlist (or Liked Songs) mirrored, in the same order, to a YouTube Music playlist. Needs a small companion app on your computer (Windows installer included).",
+  "main": "app/src/app.tsx",
+  "authors": [{ "name": "Udamian", "url": "https://github.com/Udamian" }],
   "preview": "docs/assets/preview.png",
   "readme": "README.md",
-  "tags": ["sync", "youtube-music", "playlist"]
+  "tags": ["sync", "youtube-music", "playlist", "windows"]
 }

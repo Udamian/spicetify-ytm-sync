@@ -88,7 +88,16 @@ export function Wizard({ onAuthLost, onFinished }: Props) {
       if (lists.ok) setPlaylists(lists.data.playlists);
       else setDestLoadFailed(true);
       try {
-        setLikedTotal(await readTotal(LIKED_SONGS_URI));
+        // Right after Spotify starts the library may still be loading and report 0: ask again
+        // for a few seconds rather than show a wrong "0 songs".
+        for (let attempt = 0; attempt < 5 && alive; attempt++) {
+          const total = await readTotal(LIKED_SONGS_URI);
+          if (total > 0) {
+            setLikedTotal(total);
+            break;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+        }
       } catch {
         // The count is only a nicety.
       }

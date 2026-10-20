@@ -37,6 +37,7 @@ PROGRAM_FOLDER = "ytm-sync"
 CONSOLE_EXE = "ytm-sync"  # name of the console executable (without ".exe")
 CODE_SHORTCUT = "YTM Sync Companion.lnk"
 STARTUP_SHORTCUT = "YTM Sync.lnk"
+DESKTOP_SHORTCUT = "Start YTM Sync.lnk"
 SPICETIFY_HELP = "https://spicetify.app/docs/getting-started"
 
 Runner = Callable[[Sequence[str]], tuple[int, str]]
@@ -56,9 +57,14 @@ def decode_output(data: bytes) -> str:
 
 
 def default_run(command: Sequence[str]) -> tuple[int, str]:
+    extra: dict[str, object] = {}
+    if sys.platform == "win32":
+        # The windowed companion has no console: without this a child would flash one.
+        extra["creationflags"] = 0x08000000  # CREATE_NO_WINDOW
     try:
         done = subprocess.run(  # noqa: S603
-            list(command), capture_output=True, timeout=300, check=False,
+            list(command), capture_output=True, stdin=subprocess.DEVNULL, timeout=300,
+            check=False, **extra,  # type: ignore[arg-type]
         )
     except FileNotFoundError:
         return 127, f"command not found: {command[0]}"
@@ -191,6 +197,32 @@ def shortcut_script(
     )
 
 
+_DESKTOP_LNK = (
+    "(Join-Path ([Environment]::GetFolderPath('Desktop')) " + ps_quote(DESKTOP_SHORTCUT) + ")"
+)
+DESKTOP_REMOVE = f"Remove-Item -LiteralPath {_DESKTOP_LNK} -ErrorAction SilentlyContinue"
+
+
+def desktop_shortcut_script(target: str, arguments: str, workdir: str, description: str) -> str:
+    """Like `shortcut_script`, for the Desktop, whose real location Windows knows (it can be
+    moved, for example into OneDrive). Minimised: the program has no window anyway."""
+    return (
+        f"$s = (New-Object -ComObject WScript.Shell).CreateShortcut({_DESKTOP_LNK}); "
+        f"$s.TargetPath = {ps_quote(target)}; $s.Arguments = {ps_quote(arguments)}; "
+        f"$s.WorkingDirectory = {ps_quote(workdir)}; $s.WindowStyle = 7; "
+        f"$s.Description = {ps_quote(description)}; $s.Save()"
+    )
+
+
+def write_startup_shortcut(env: Env, exe: Path, workdir: Path) -> None:
+    """Create the shortcut that starts the companion, without a window, when the person signs in."""
+    command = runtime.background_command(str(exe), env.platform, frozen=True)
+    _powershell(env, shortcut_script(
+        startup_dir(env) / STARTUP_SHORTCUT, command[0], " ".join(command[1:]),
+        str(workdir), 7, "Starts the YTM Sync companion when you sign in",
+    ))
+
+
 def _powershell(env: Env, script: str) -> None:
     code, output = env.run(
         ["powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
@@ -304,6 +336,9 @@ def _install_steps(
             # installed folder once the program has been copied there.
             return runtime.background_command(str(installed_exe), env.platform, frozen=True)
 
+        def startup_shortcut() -> None:
+            write_startup_shortcut(env, installed_exe, target)
+
         def copy_program() -> None:
             source = env.executable.parent
             if source.resolve() == target.resolve():
@@ -312,23 +347,26 @@ def _install_steps(
                 raise InstallError("The companion would not stop. Quit it and try again.")
             _replace_dir(env, source, target, make_parents=True)
 
+        def desktop_shortcut() -> None:
+            # On the Desktop (wherever Windows keeps it, OneDrive included): starts the companion
+            # without a window, for when it was stopped and the page cannot start it.
+            command = background()
+            _powershell(env, desktop_shortcut_script(
+                command[0], " ".join(command[1:]), str(target),
+                "Start the YTM Sync companion (no window)",
+            ))
+
         def start_menu_shortcut() -> None:
             _powershell(env, shortcut_script(
                 _start_menu(env) / CODE_SHORTCUT, str(installed_exe), "code --pause", str(target),
                 1, "Show the YTM Sync pairing code",
             ))
 
-        def startup_shortcut() -> None:
-            command = background()
-            _powershell(env, shortcut_script(
-                startup_dir(env) / STARTUP_SHORTCUT, command[0], " ".join(command[1:]),
-                str(target), 7, "Starts the YTM Sync companion when you sign in",
-            ))
-
         steps += [
             (f"Install the companion in {target}", copy_program),
             ("Add the Start Menu shortcut 'YTM Sync Companion'", start_menu_shortcut),
             ("Start the companion when you sign in", startup_shortcut),
+            ("Add the Desktop shortcut 'Start YTM Sync'", desktop_shortcut),
             ("Start the companion now", lambda: env.start_companion(background())),
         ]
     else:
@@ -393,6 +431,10 @@ def _uninstall_steps(env: Env, settings: Settings, *, purge: bool) -> list[Step]
         for path in (_start_menu(env) / CODE_SHORTCUT, startup_dir(env) / STARTUP_SHORTCUT):
             path.unlink(missing_ok=True)
 
+    def remove_desktop_shortcut() -> None:
+        if env.windows:  # a PowerShell hiccup here is not worth failing the uninstall for
+            env.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", DESKTOP_REMOVE])
+
     def unregister() -> None:
         found = find_spicetify(env)
         ctx["spicetify"] = found
@@ -425,6 +467,7 @@ def _uninstall_steps(env: Env, settings: Settings, *, purge: bool) -> list[Step]
     steps: list[Step] = [
         ("Stop the companion", stop),
         ("Remove the shortcuts", remove_shortcuts),
+        ("Remove the Desktop shortcut", remove_desktop_shortcut),
         ("Remove the app from Spicetify and apply", unregister),
         ("Remove the installed companion", remove_program),
     ]

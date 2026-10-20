@@ -1,0 +1,47 @@
+name: Beta feedback
+description: Closed beta testers - how did it go?
+labels: [beta]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you! See [docs/beta.md](../blob/main/docs/beta.md). Do not paste cookies, headers or tokens.
+  - type: dropdown
+    id: stage
+    attributes:
+      label: Which round is this?
+      options: ["After the first setup", "After 3 days", "After 7 days", "After 14 days"]
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: Did the installer work first time?
+      options: ["Yes", "Yes, after a retry", "No"]
+  - type: dropdown
+    id: youtube
+    attributes:
+      label: Did you connect YouTube Music without help?
+      options: ["Yes", "Yes, but it was confusing", "No, I needed help"]
+  - type: input
+    id: size
+    attributes:
+      label: What did you copy, and how many songs?
+      placeholder: "Liked Songs, about 1,500"
+  - type: dropdown
+    id: order
+    attributes:
+      label: Is the order the same on both sides?
+      options: ["Yes", "Mostly", "No", "Did not check"]
+  - type: input
+    id: session
+    attributes:
+      label: Did YouTube Music ask you to reconnect? After how many days?
+  - type: textarea
+    id: confusing
+    attributes:
+      label: What was confusing or annoying?
+  - type: textarea
+    id: other
+    attributes:
+      label: Anything else?

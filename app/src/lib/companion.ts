@@ -221,3 +221,18 @@ export const retrySync = (jobId: number) =>
     body: { job_id: jobId },
     auth: true,
   });
+
+export type AutostartInfo = { supported: boolean; enabled: boolean };
+
+export const getAutostart = () => request<AutostartInfo>("/autostart", { auth: true });
+
+export const setAutostart = (enabled: boolean) =>
+  request<AutostartInfo>("/autostart", { method: "POST", body: { enabled }, auth: true });
+
+/** Summary with no secrets, ids or song titles, meant to be pasted into a bug report. */
+export const getDiagnostics = () =>
+  request<Record<string, unknown>>("/diagnostics", { auth: true });
+
+/** Stops the helper app (a running copy is paused and resumes the next time it starts). */
+export const stopCompanion = () =>
+  request<{ ok: boolean }>("/shutdown", { method: "POST", body: {}, auth: true });

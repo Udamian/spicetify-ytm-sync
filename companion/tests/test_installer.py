@@ -19,12 +19,21 @@ class FakeSpicetify:
         self.apply_fails = 0  # next N `apply` calls fail (a first run has no backup yet)
         self.backup_fails = False
         self.powershell: list[str] = []
+        self.registry: dict[str, dict[str, str]] = {}
 
     def __call__(self, command):
         command = list(command)
         self.calls.append(command)
         if command[0] == "powershell":
             self.powershell.append(command[-1])
+            return 0, ""
+        if command[0] == "reg":
+            key = command[2]
+            if command[1] == "delete":
+                self.registry = {k: v for k, v in self.registry.items() if not k.startswith(key)}
+            else:
+                name = command[command.index("/v") + 1] if "/v" in command else ""
+                self.registry.setdefault(key, {})[name] = command[command.index("/d") + 1]
             return 0, ""
         args = command[1:]
         if args == ["path", "userdata"]:
@@ -48,7 +57,7 @@ class FakeSpicetify:
         return 1, f"unexpected: {args}"
 
     def verbs(self) -> list[str]:
-        return [" ".join(c[1:]) for c in self.calls if c[0] != "powershell"]
+        return [" ".join(c[1:]) for c in self.calls if c[0] not in ("powershell", "reg")]
 
 
 @pytest.fixture
@@ -280,12 +289,16 @@ def test_windows_install_sets_up_the_companion_and_shortcuts(tmp_path, built_app
     assert (program / "ytm-sync.exe").exists() and (program / "ytm-sync-background.exe").exists()
     assert stopped == [settings]  # the old companion is stopped before its files are replaced
 
-    menu, startup = fake.powershell
+    menu, startup, desktop = fake.powershell
     assert "YTM Sync Companion.lnk" in menu and "code --pause" in menu
     assert str(program / "ytm-sync.exe") in menu and "$s.WindowStyle = 1" in menu
     assert "Startup" in startup and "YTM Sync.lnk" in startup
     assert str(program / "ytm-sync-background.exe") in startup
     assert "run --background" in startup and "$s.WindowStyle = 7" in startup
+    # The Desktop shortcut starts the companion without a window, in the folder Windows says.
+    assert "GetFolderPath('Desktop')" in desktop and "Start YTM Sync.lnk" in desktop
+    assert str(program / "ytm-sync-background.exe") in desktop and "run --background" in desktop
+    assert "$s.WindowStyle = 7" in desktop and "ytm-sync.exe" not in desktop
     assert started == [[str(program / "ytm-sync-background.exe"), "run", "--background"]]
     assert (roaming / "spicetify" / "CustomApps" / "ytm-sync" / "index.js").exists()
 
@@ -330,6 +343,8 @@ def test_uninstall_removes_everything_but_keeps_the_data(tmp_path, built_app, wi
     assert not (local / "Programs" / "ytm-sync").exists()
     assert not (startup / "YTM Sync.lnk").exists()
     assert not (startup.parent / "YTM Sync Companion.lnk").exists()
+    assert "Remove-Item" in fake.powershell[-1] and "Start YTM Sync.lnk" in fake.powershell[-1]
+    assert fake.registry == {}  # nothing is written to the registry any more
     assert (settings.data_dir / "browser.json").exists()  # the YouTube Music session survives
 
 

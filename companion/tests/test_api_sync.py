@@ -304,3 +304,4 @@ def test_retry_validation(client, auth, connected, fake, worker):
     job_id = start(client, auth, tracks).get_json()["job_id"]
     worker.run_once()  # finished fine: cannot be retried
     assert client.post("/sync/retry", json={"job_id": job_id}, headers=auth).status_code == 409
+

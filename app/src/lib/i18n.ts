@@ -16,14 +16,16 @@ const en = {
   offlineTitle: "The helper app is not running",
   offlineBody:
     "YTM Sync needs a small helper app on this computer to talk to YouTube Music. Start it, then press the button below.",
-  offlineHint: "Windows: open the YTM Sync Companion shortcut. A window with a pairing code will appear.",
+  offlineHint:
+    "Windows: type \"YTM Sync Companion\" in the Windows search (you can close its window afterwards), or double-click the \"Start YTM Sync\" shortcut on your Desktop.",
 
   versionTitle: "Versions do not match",
   versionBody:
     "The helper app (v{version}) speaks API {api}, but this app expects API {expected}. Update whichever is older.",
 
   pairTitle: "Pair with the helper app",
-  pairBody: "Type the code shown in the helper app window. You only do this once.",
+  pairBody:
+    "To see the code, open \"YTM Sync Companion\" from the Start Menu (search for \"YTM Sync\"): a window shows it. Type it here. You only do this once.",
   pairPlaceholder: "XXXXXXXX",
   pairButton: "Pair",
   pairInvalid: "That code is not right.",
@@ -65,6 +67,7 @@ const en = {
   wzSourceTitle: "What do you want to copy?",
   wzLiked: "Liked Songs",
   wzLikedCount: "{n} songs",
+  wzLikedCountOne: "{n} song",
   wzPlaylistOption: "A Spotify playlist",
   wzPlaylistPlaceholder: "Paste the playlist link (Share > Copy link to playlist)",
   wzPlaylistBad: "That is not a Spotify playlist link.",
@@ -77,13 +80,15 @@ const en = {
   wzDestCreateError: "Could not create the playlist in YouTube Music.",
   wzDestNotEmpty:
     "This playlist already has {n} songs. New songs go after them, so the order only matches Spotify if the playlist starts empty.",
+  wzDestNotEmptyOne:
+    "This playlist already has 1 song. New songs go after it, so the order only matches Spotify if the playlist starts empty.",
   wzCheck: "Check and preview",
   wzReading: "Reading your Spotify library... {read} of {total}",
   wzReadError: "Could not read your Spotify library. Try again, or update Spotify and Spicetify.",
   wzNoTracks: "That source has no songs that can be copied.",
   wzPreviewTitle: "Ready to copy",
   wzPreviewBody:
-    "{total} songs. {matched} already matched, {search} still to look up on YouTube Music.",
+    "Songs: {total}. Already matched: {matched}. Still to look up on YouTube Music: {search}.",
   wzEstimate: "Estimated time: {time}. The helper app does the work, so you can keep using Spotify.",
   wzTimeLess: "less than a minute",
   wzTimeMinutes: "about {n} min",
@@ -96,7 +101,8 @@ const en = {
   wzCancel: "Cancel",
   wzDoneTitle: "Copy finished",
   wzDoneAdded: "{added} songs added to YouTube Music.",
-  wzDoneMatches: "{ok} matched automatically, {review} to review, {nf} not found.",
+  wzDoneAddedOne: "1 song added to YouTube Music.",
+  wzDoneMatches: "Matched automatically: {ok}. To review: {review}. Not found: {nf}.",
   wzOrderOk: "Order checked: it matches Spotify.",
   wzOrderBad: "The order could not be fully checked. Run the copy again to repair it.",
   wzFailedTitle: "The copy stopped",
@@ -120,25 +126,31 @@ const en = {
   rvSaveError: "Could not save that decision. Try again.",
   rvMore: "Showing the first {n}. Decide these and the rest will appear.",
   rvApply: "Apply {n} decisions to YouTube Music",
+  rvApplyOne: "Apply 1 decision to YouTube Music",
   rvApplying: "Updating YouTube Music...",
   rvApplied: "Done. {added} songs added and the order is checked.",
+  rvAppliedOne: "Done. 1 song added and the order is checked.",
   rvApplyError: "Could not apply the changes. Try again.",
   rvAppliedPartial: "The update did not finish. Try again: what is done is not repeated.",
 
   autoLabel: "Check for new songs every time Spotify starts",
   autoHint: "New Liked Songs and playlist changes are sent to YouTube Music automatically.",
   autoNotifySending: "YTM Sync: sending {n} new songs to YouTube Music...",
+  autoNotifySendingOne: "YTM Sync: sending 1 new song to YouTube Music...",
   autoNotifyUpdating: "YTM Sync: updating your playlist copy on YouTube Music...",
   autoNotifyDone: "YTM Sync: {added} songs added to YouTube Music.",
+  autoNotifyDoneOne: "YTM Sync: 1 song added to YouTube Music.",
   autoNotifyReview: "YTM Sync: {n} songs need your review.",
+  autoNotifyReviewOne: "YTM Sync: 1 song needs your review.",
   autoNotifyExpired: "YTM Sync: your YouTube Music session expired. Open YTM Sync to reconnect.",
   autoNotifyFailed: "YTM Sync: the update stopped. Open YTM Sync for details.",
   autoNotifyOrder:
     "YTM Sync: songs were added, but their order could not be confirmed. Open YTM Sync and use \"Check the order now\".",
 
   ocButton: "Check the order now",
-  ocHint: "Compares the YouTube Music playlist with Spotify and moves songs that are out of place.",
-  ocFixed: "Done: {added} songs added and {moves} moved into place. The order matches Spotify.",
+  ocHint:
+    "Compares the YouTube Music playlist with Spotify, adds any song that is missing and moves songs that are out of place.",
+  ocFixed: "Done. Songs added: {added}. Songs moved into place: {moves}. The order matches Spotify.",
   ocAlready: "Everything was already in the right order.",
   ocNotVerified: "The order could not be fully confirmed. Try again in a minute.",
   ocFailed: "Could not check the order. Is the helper app running and YouTube Music connected?",
@@ -150,6 +162,35 @@ const en = {
   wzResumeFailed: "It stopped before finishing. What is already done is not repeated.",
   wzResume: "Resume",
   wzResumeError: "Could not resume it. Start the copy again.",
+
+  pnTitle: "Helper app",
+  pnRunning: "Running (v{version})",
+  pnLastNever: "Not synced yet",
+  pnLast: "Last sync: {when}",
+  pnWhenNow: "just now",
+  pnWhenMinutes: "{n} min ago",
+  pnWhenHours: "{n} h ago",
+  pnWhenDays: "{n} d ago",
+  pnBusy: "Copying to YouTube Music: {percent}%",
+  pnSyncNow: "Sync now",
+  pnSyncing: "Syncing...",
+  pnSyncUpToDate: "Everything is up to date.",
+  pnSyncSent: "Done: 1 new song sent.",
+  pnSyncSentMany: "Done: {n} new songs sent.",
+  pnSyncNoCopies: "Nothing to sync yet. Copy a playlist first.",
+  pnSyncFailed: "The sync did not finish. Try again in a moment.",
+  pnStop: "Stop the helper app",
+  pnStopAsk: "Stop the helper app? Nothing is synced until you start it again.",
+  pnStopFailed: "Could not stop it. Close it from the Task Manager.",
+  pnAutostart: "Start with Windows",
+  pnAutostartHint:
+    "The helper app starts by itself when you sign in, so syncing works as soon as Spotify opens.",
+  pnAutostartError: "Could not change that setting.",
+  pnDiag: "Copy diagnostics",
+  pnDiagHint: "Copies a summary with no passwords, links or song names, to paste into a bug report.",
+  pnDiagCopied: "Copied. Paste it into your bug report.",
+  pnDiagFailed: "Could not read the diagnostics. Is the helper app running?",
+  pnDiagManual: "Could not copy it automatically. Select the text below and copy it.",
 } as const;
 
 export type Key = keyof typeof en;
@@ -171,14 +212,15 @@ const es: Table = {
   offlineBody:
     "YTM Sync necesita una pequeña app auxiliar en este ordenador para hablar con YouTube Music. Ábrela y pulsa el botón de abajo.",
   offlineHint:
-    "Windows: abre el acceso directo YTM Sync Companion. Aparecerá una ventana con un código de emparejamiento.",
+    "Windows: escribe «YTM Sync Companion» en el buscador de Windows (luego puedes cerrar su ventana), o abre el acceso directo «Start YTM Sync» del escritorio.",
 
   versionTitle: "Las versiones no coinciden",
   versionBody:
     "La app auxiliar (v{version}) usa la API {api}, pero esta app espera la API {expected}. Actualiza la que sea más antigua.",
 
   pairTitle: "Emparejar con la app auxiliar",
-  pairBody: "Escribe el código que aparece en la ventana de la app auxiliar. Solo se hace una vez.",
+  pairBody:
+    "Para ver el código, abre «YTM Sync Companion» desde el Menú Inicio (busca «YTM Sync»): una ventana lo muestra. Escríbelo aquí. Solo se hace una vez.",
   pairPlaceholder: "XXXXXXXX",
   pairButton: "Emparejar",
   pairInvalid: "Ese código no es correcto.",
@@ -224,6 +266,7 @@ const es: Table = {
   wzSourceTitle: "¿Qué quieres copiar?",
   wzLiked: "Canciones que te gustan",
   wzLikedCount: "{n} canciones",
+  wzLikedCountOne: "{n} canción",
   wzPlaylistOption: "Una playlist de Spotify",
   wzPlaylistPlaceholder: "Pega el enlace de la playlist (Compartir > Copiar enlace de la playlist)",
   wzPlaylistBad: "Eso no es un enlace de playlist de Spotify.",
@@ -236,6 +279,8 @@ const es: Table = {
   wzDestCreateError: "No se pudo crear la playlist en YouTube Music.",
   wzDestNotEmpty:
     "Esta playlist ya tiene {n} canciones. Las nuevas van detrás, así que el orden solo coincidirá con Spotify si la playlist empieza vacía.",
+  wzDestNotEmptyOne:
+    "Esta playlist ya tiene 1 canción. Las nuevas van detrás, así que el orden solo coincidirá con Spotify si la playlist empieza vacía.",
   wzCheck: "Comprobar y previsualizar",
   wzReading: "Leyendo tu biblioteca de Spotify... {read} de {total}",
   wzReadError:
@@ -243,7 +288,7 @@ const es: Table = {
   wzNoTracks: "Ese origen no tiene canciones que se puedan copiar.",
   wzPreviewTitle: "Listo para copiar",
   wzPreviewBody:
-    "{total} canciones. {matched} ya emparejadas, {search} por buscar en YouTube Music.",
+    "Canciones: {total}. Ya emparejadas: {matched}. Por buscar en YouTube Music: {search}.",
   wzEstimate:
     "Tiempo estimado: {time}. La app auxiliar hace el trabajo, así que puedes seguir usando Spotify.",
   wzTimeLess: "menos de un minuto",
@@ -257,7 +302,8 @@ const es: Table = {
   wzCancel: "Cancelar",
   wzDoneTitle: "Copia terminada",
   wzDoneAdded: "{added} canciones añadidas a YouTube Music.",
-  wzDoneMatches: "{ok} emparejadas automáticamente, {review} por revisar, {nf} sin encontrar.",
+  wzDoneAddedOne: "1 canción añadida a YouTube Music.",
+  wzDoneMatches: "Emparejadas automáticamente: {ok}. Por revisar: {review}. Sin encontrar: {nf}.",
   wzOrderOk: "Orden comprobado: coincide con Spotify.",
   wzOrderBad: "No se pudo comprobar del todo el orden. Vuelve a copiar para repararlo.",
   wzFailedTitle: "La copia se detuvo",
@@ -281,8 +327,10 @@ const es: Table = {
   rvSaveError: "No se pudo guardar esa decisión. Inténtalo de nuevo.",
   rvMore: "Se muestran las primeras {n}. Decide estas y aparecerán las demás.",
   rvApply: "Aplicar {n} decisiones a YouTube Music",
+  rvApplyOne: "Aplicar 1 decisión a YouTube Music",
   rvApplying: "Actualizando YouTube Music...",
   rvApplied: "Listo. {added} canciones añadidas y el orden comprobado.",
+  rvAppliedOne: "Listo. 1 canción añadida y el orden comprobado.",
   rvApplyError: "No se pudieron aplicar los cambios. Inténtalo de nuevo.",
   rvAppliedPartial: "La actualización no terminó. Inténtalo otra vez: lo ya hecho no se repite.",
 
@@ -290,9 +338,12 @@ const es: Table = {
   autoHint:
     "Las canciones nuevas de Me gusta y los cambios de tus playlists se envían solos a YouTube Music.",
   autoNotifySending: "YTM Sync: enviando {n} canciones nuevas a YouTube Music...",
+  autoNotifySendingOne: "YTM Sync: enviando 1 canción nueva a YouTube Music...",
   autoNotifyUpdating: "YTM Sync: actualizando la copia de tu playlist en YouTube Music...",
   autoNotifyDone: "YTM Sync: {added} canciones añadidas a YouTube Music.",
+  autoNotifyDoneOne: "YTM Sync: 1 canción añadida a YouTube Music.",
   autoNotifyReview: "YTM Sync: {n} canciones necesitan tu revisión.",
+  autoNotifyReviewOne: "YTM Sync: 1 canción necesita tu revisión.",
   autoNotifyExpired:
     "YTM Sync: tu sesión de YouTube Music caducó. Abre YTM Sync para volver a conectar.",
   autoNotifyFailed: "YTM Sync: la actualización se detuvo. Abre YTM Sync para ver los detalles.",
@@ -301,8 +352,9 @@ const es: Table = {
 
   ocButton: "Comprobar el orden ahora",
   ocHint:
-    "Compara la playlist de YouTube Music con Spotify y mueve las canciones que estén fuera de sitio.",
-  ocFixed: "Listo: {added} canciones añadidas y {moves} colocadas en su sitio. El orden coincide con Spotify.",
+    "Compara la playlist de YouTube Music con Spotify, añade las canciones que falten y mueve las que estén fuera de sitio.",
+  ocFixed:
+    "Listo. Canciones añadidas: {added}. Canciones colocadas en su sitio: {moves}. El orden coincide con Spotify.",
   ocAlready: "Todo estaba ya en el orden correcto.",
   ocNotVerified: "No se pudo confirmar del todo el orden. Inténtalo de nuevo en un minuto.",
   ocFailed:
@@ -315,6 +367,36 @@ const es: Table = {
   wzResumeFailed: "Se detuvo antes de terminar. Lo que ya está hecho no se repite.",
   wzResume: "Reanudar",
   wzResumeError: "No se pudo reanudar. Empieza la copia de nuevo.",
+
+  pnTitle: "App auxiliar",
+  pnRunning: "En marcha (v{version})",
+  pnLastNever: "Todavía sin sincronizar",
+  pnLast: "Última sincronización: {when}",
+  pnWhenNow: "ahora mismo",
+  pnWhenMinutes: "hace {n} min",
+  pnWhenHours: "hace {n} h",
+  pnWhenDays: "hace {n} d",
+  pnBusy: "Copiando a YouTube Music: {percent}%",
+  pnSyncNow: "Sincronizar ahora",
+  pnSyncing: "Sincronizando...",
+  pnSyncUpToDate: "Todo está al día.",
+  pnSyncSent: "Listo: 1 canción nueva enviada.",
+  pnSyncSentMany: "Listo: {n} canciones nuevas enviadas.",
+  pnSyncNoCopies: "Todavía no hay nada que sincronizar. Copia antes una playlist.",
+  pnSyncFailed: "La sincronización no terminó. Inténtalo de nuevo en un momento.",
+  pnStop: "Detener la app auxiliar",
+  pnStopAsk: "¿Detener la app auxiliar? No se sincroniza nada hasta que la vuelvas a abrir.",
+  pnStopFailed: "No se pudo detener. Ciérrala desde el Administrador de tareas.",
+  pnAutostart: "Iniciar con Windows",
+  pnAutostartHint:
+    "La app auxiliar arranca sola al iniciar sesión, así que la sincronización funciona en cuanto se abre Spotify.",
+  pnAutostartError: "No se pudo cambiar ese ajuste.",
+  pnDiag: "Copiar diagnóstico",
+  pnDiagHint:
+    "Copia un resumen sin contraseñas, enlaces ni nombres de canciones, para pegarlo en un informe de error.",
+  pnDiagCopied: "Copiado. Pégalo en tu informe de error.",
+  pnDiagFailed: "No se pudo leer el diagnóstico. ¿Está en marcha la app auxiliar?",
+  pnDiagManual: "No se pudo copiar automáticamente. Selecciona el texto de abajo y cópialo.",
 };
 
 const tables: Record<"en" | "es", Table> = { en, es };
@@ -336,3 +418,21 @@ export function translate(lang: "en" | "es", key: Key, vars: Record<string, stri
 
 export const t = (key: Key, vars?: Record<string, string | number>) =>
   translate(detectLang(), key, vars);
+
+/**
+ * Like `t`, for messages that count things: when `count` is 1 and the table has a `<key>One`
+ * entry, that singular text is used ("1 song" instead of "1 songs").
+ */
+export function translateCount(
+  lang: "en" | "es",
+  key: Key,
+  count: number,
+  vars: Record<string, string | number> = {}
+) {
+  const singular = `${key}One`;
+  const chosen = count === 1 && singular in en ? (singular as Key) : key;
+  return translate(lang, chosen, vars);
+}
+
+export const tn = (key: Key, count: number, vars?: Record<string, string | number>) =>
+  translateCount(detectLang(), key, count, vars);

@@ -37,6 +37,12 @@ Windows first. You need Spotify desktop, [Spicetify](https://spicetify.app/docs/
 3. Restart Spotify, open **YTM Sync** in the left sidebar and follow the steps. To pair, open
    **YTM Sync Companion** from the Start Menu and type the code it shows.
 
+The helper app starts by itself every time you sign in to Windows. If you stop it (or it closes),
+a web page cannot start it again: type **YTM Sync Companion** in the Windows search, or double-click
+the **Start YTM Sync** shortcut the installer puts on your Desktop, then press *Try again* on the
+page. The *Helper app* card on the page has *Sync now*, *Start with Windows*, *Copy diagnostics*
+and *Stop*.
+
 Windows may warn that the program is from an unknown publisher: the release is not code-signed
 yet. Choose *More info* and *Run anyway*. The zip comes with a `.sha256` file to check it.
 

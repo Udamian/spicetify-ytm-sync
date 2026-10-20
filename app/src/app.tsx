@@ -1,5 +1,6 @@
 import React from "react";
 import styles from "./css/app.module.scss";
+import { CompanionPanel } from "./components/CompanionPanel";
 import { OrderCheck } from "./components/OrderCheck";
 import { Stepper, StepId } from "./components/Stepper";
 import { Review } from "./screens/Review";
@@ -162,6 +163,8 @@ function App() {
           </section>
         </>
       )}
+
+      {view.kind === "ready" && <CompanionPanel onStopped={refresh} />}
     </div>
   );
 }

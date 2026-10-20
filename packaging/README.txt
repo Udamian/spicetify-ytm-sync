@@ -21,4 +21,4 @@ Uninstall
   Double-click "Uninstall YTM Sync.cmd". Your YouTube Music session and copy progress are kept.
   To delete them too, open a terminal in this folder and run:  ytm-sync.exe uninstall --purge
 
-More: https://github.com/OWNER/spicetify-ytm-sync
+More: https://github.com/Udamian/spicetify-ytm-sync

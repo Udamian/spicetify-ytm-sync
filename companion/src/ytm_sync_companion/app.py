@@ -7,18 +7,20 @@ The rationale for each step is in docs/security.md.
 from __future__ import annotations
 
 import json
+import logging
 import math
 import re
 import threading
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from flask import Flask, Response, jsonify, request
 
-from . import __version__, jobs, ytm
+from . import __version__, diagnostics, jobs, ytm
+from .autostart import Autostart
 from .config import API_VERSION, Settings
 from .db import connect, init_db
 from .headers import check_headers
@@ -32,6 +34,8 @@ from .security import (
 )
 from .sync import resolve_review
 from .worker import Worker
+
+log = logging.getLogger(__name__)
 
 # Endpoints reachable without a bearer token.
 PUBLIC_ENDPOINTS = frozenset({"health", "pair"})
@@ -86,6 +90,7 @@ class Services:
     worker: Worker | None = None
     # Set by the command line when it runs the server: stops the process cleanly.
     on_shutdown: Callable[[], None] | None = None
+    autostart: Autostart = field(default_factory=Autostart)
 
 
 def _job_json(job: jobs.Job) -> dict[str, Any]:
@@ -109,6 +114,7 @@ def create_app(
     client_factory: ytm.ClientFactory = ytm.load_client,
     on_new_code: Callable[[str], None] | None = None,
     on_shutdown: Callable[[], None] | None = None,
+    autostart: Autostart | None = None,
     worker_enabled: bool = False,
     engine_kwargs: dict[str, Any] | None = None,
 ) -> Flask:
@@ -120,6 +126,7 @@ def create_app(
         client_factory=client_factory,
         on_new_code=on_new_code,
         on_shutdown=on_shutdown,
+        autostart=autostart or Autostart(),
     )
     startup = init_db(settings.db_path)
     try:
@@ -218,6 +225,35 @@ def create_app(
             return _error("not_supported", 501)
         threading.Timer(0.3, services.on_shutdown).start()  # after this answer is sent
         return jsonify({"ok": True})
+
+    @app.get("/autostart")
+    def autostart_get() -> Any:
+        return jsonify(services.autostart.state())
+
+    @app.post("/autostart")
+    def autostart_set() -> Any:
+        body = request.get_json(silent=True)
+        enabled = body.get("enabled") if isinstance(body, dict) else None
+        if not isinstance(enabled, bool):
+            return _error("bad_request", 400)
+        if not services.autostart.supported:
+            return _error("not_supported", 409)
+        try:
+            services.autostart.set(enabled)
+        except Exception:  # shortcut creation failed; details are in the log, not the answer
+            log.exception("could not change the start-with-Windows setting")
+            return _error("autostart_failed", 500)
+        return jsonify(services.autostart.state())
+
+    @app.get("/diagnostics")
+    def diagnostics_get() -> Any:
+        youtube = ytm.session_status(settings.auth_path, services.client_factory)
+        with db() as conn:
+            report = diagnostics.collect(
+                settings, conn, youtube=youtube, autostart=services.autostart.state(),
+                worker_running=bool(services.worker and services.worker.running),
+            )
+        return jsonify(report)
 
     @app.post("/auth/headers")
     def auth_headers() -> Any:

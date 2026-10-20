@@ -22,7 +22,7 @@ body:
     id: versions
     attributes:
       label: Versions
-      description: Companion (`ytm-sync-companion --version`), Spotify, Spicetify, `ytmusicapi`
+      description: Companion version (shown in the Helper app card), Spotify, Spicetify
   - type: dropdown
     id: os
     attributes:
@@ -33,6 +33,6 @@ body:
   - type: textarea
     id: logs
     attributes:
-      label: Relevant log output
-      description: Please check it contains no cookies, tokens or headers first.
+      label: Diagnostics or log output
+      description: Press "Copy diagnostics" in the Helper app card of the YTM Sync page and paste it here. It has no passwords, links or song names. If you paste log lines instead, check them first.
       render: text

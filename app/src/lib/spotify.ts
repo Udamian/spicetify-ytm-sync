@@ -122,8 +122,17 @@ export async function readAll(
 
 /** Number of rows Spotify reports for the source (cheap: one item). */
 export async function readTotal(sourceUri: string): Promise<number> {
-  const page = await fetchPage(pageFetcher(sourceUri), 0, 1);
-  return page.totalLength ?? page.items!.length;
+  const fetcher = pageFetcher(sourceUri);
+  const page = await fetchPage(fetcher, 0, 1);
+  const reported = page.totalLength;
+  if (typeof reported === "number" && reported >= page.items!.length) return reported;
+  // Missing or contradictory total (for example 0 next to a returned row): count by paging.
+  let count = 0;
+  for (let offset = 0; ; offset += PAGE_SIZE) {
+    const rows = (await fetchPage(fetcher, offset, PAGE_SIZE)).items!.length;
+    count += rows;
+    if (rows < PAGE_SIZE) return count;
+  }
 }
 
 /**
