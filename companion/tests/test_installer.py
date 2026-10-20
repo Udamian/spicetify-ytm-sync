@@ -135,7 +135,7 @@ def test_spicetify_found_on_the_path(tmp_path, built_app, linux):
     (env.home / ".spicetify" / "spicetify").unlink()
     env.which = lambda name: "/usr/bin/spicetify" if name == "spicetify" else None
     assert installer.install(settings_in(tmp_path), app_dir=str(built_app), env=env) == 0
-    assert fake.calls[0][0] == "/usr/bin/spicetify"
+    assert Path(fake.calls[0][0]) == Path("/usr/bin/spicetify")
 
 
 def test_a_first_run_without_backup_falls_back_to_backup_apply(tmp_path, built_app, linux):
