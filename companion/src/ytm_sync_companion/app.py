@@ -63,15 +63,19 @@ def parse_tracks(raw: object) -> tuple[list[dict[str, Any]], int | None]:
             return [], index
         uri, title, artists = item.get("uri"), item.get("title"), item.get("artists", [])
         duration, album = item.get("durationMs"), item.get("album")
-        valid = (
-            isinstance(uri, str) and _TRACK_URI.match(uri)
-            and isinstance(title, str) and len(title) <= 300
-            and isinstance(artists, list) and len(artists) <= 20
-            and all(isinstance(a, str) and len(a) <= 200 for a in artists)
-            and (duration is None or (isinstance(duration, int) and 0 <= duration <= 86_400_000))
-            and (album is None or (isinstance(album, str) and len(album) <= 300))
-        )
-        if not valid:
+        checks = {
+            "uri": isinstance(uri, str) and bool(_TRACK_URI.match(uri)),
+            "title": isinstance(title, str) and len(title) <= 300,
+            "artists": isinstance(artists, list) and len(artists) <= 20
+            and all(isinstance(a, str) and len(a) <= 200 for a in artists),
+            "durationMs": duration is None
+            or (isinstance(duration, int) and 0 <= duration <= 86_400_000),
+            "album": album is None or (isinstance(album, str) and len(album) <= 300),
+        }
+        bad = [name for name, ok in checks.items() if not ok]
+        if bad:
+            # Only the position and the field names: never the song, so the log stays shareable.
+            log.warning("track %d refused: invalid %s", index, ", ".join(bad))
             return [], index
         clean.append(
             {"uri": uri, "title": title, "artists": artists, "durationMs": duration, "album": album}

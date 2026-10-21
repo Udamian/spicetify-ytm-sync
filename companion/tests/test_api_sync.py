@@ -305,3 +305,17 @@ def test_retry_validation(client, auth, connected, fake, worker):
     worker.run_once()  # finished fine: cannot be retried
     assert client.post("/sync/retry", json={"job_id": job_id}, headers=auth).status_code == 409
 
+
+
+def test_a_refused_track_is_logged_by_position_and_field_never_by_name(
+    client, auth, connected, caplog
+):
+    tracks = payload(make_tracks(3))
+    tracks[2]["artists"] = [f"a{i}" for i in range(25)]  # more than the 20 allowed
+    tracks[2]["title"] = "Secret Song Name"
+    with caplog.at_level("WARNING"):
+        response = client.post("/sync/preview", json={"tracks": tracks}, headers=auth)
+    assert (response.status_code, response.get_json()["error"]) == (400, "bad_tracks")
+    assert response.get_json()["index"] == 2
+    assert "track 2 refused: invalid artists" in caplog.text
+    assert "Secret Song Name" not in caplog.text

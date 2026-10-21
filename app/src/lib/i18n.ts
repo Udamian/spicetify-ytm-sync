@@ -95,6 +95,8 @@ const en = {
   wzStart: "Start copying",
   wzBack: "Back",
   wzStartError: "Could not start the copy. Is the helper app still running?",
+  wzBadTracks:
+    "The helper app refused some song data. Press \"Copy diagnostics\" in the Helper app card and send it in a bug report.",
   wzAlreadyRunning: "A copy was already running. This is its progress.",
   wzRunningTitle: "Copying to YouTube Music",
   wzProgress: "{done} of {total}",
@@ -296,6 +298,8 @@ const es: Table = {
   wzStart: "Empezar a copiar",
   wzBack: "Atrás",
   wzStartError: "No se pudo iniciar la copia. ¿Sigue abierta la app auxiliar?",
+  wzBadTracks:
+    "La app auxiliar rechazó los datos de alguna canción. Pulsa «Copiar diagnóstico» en la tarjeta «App auxiliar» y envíalo en un informe de error.",
   wzAlreadyRunning: "Ya había una copia en marcha. Este es su progreso.",
   wzRunningTitle: "Copiando a YouTube Music",
   wzProgress: "{done} de {total}",

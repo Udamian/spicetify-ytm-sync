@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping. The project is pre-alpha: read [`docs/architecture.md`](docs/architecture.md)
+Thanks for helping. The project is in beta: read [`docs/architecture.md`](docs/architecture.md)
 and [`docs/roadmap.md`](docs/roadmap.md) first, so you know which parts are settled and which are
 still being validated (the "spikes").
 

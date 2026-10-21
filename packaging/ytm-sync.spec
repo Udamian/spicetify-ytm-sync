@@ -5,12 +5,15 @@
 #   ytm-sync-background.exe  no window: what starts at login (`run --background`)
 # One folder (not one file): starts faster and antivirus programs flag it less often.
 # The built Spicetify app (app/dist) is bundled as data and copied by `install`.
+import sys
 from pathlib import Path
 
 from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
 ROOT = Path(SPECPATH).parent
 APP_DIST = ROOT / "app" / "dist"
+# The icon of the program and of the shortcuts made from it (only Windows uses it).
+ICON = str(ROOT / "packaging" / "ytm-sync.ico") if sys.platform == "win32" else None
 if not (APP_DIST / "index.js").is_file():
     raise SystemExit(f"{APP_DIST} has no index.js: run `npm run build-local` in app/ first.")
 
@@ -24,10 +27,10 @@ analysis = Analysis(
 pyz = PYZ(analysis.pure)
 
 console_exe = EXE(
-    pyz, analysis.scripts, [], exclude_binaries=True, name="ytm-sync", console=True,
+    pyz, analysis.scripts, [], exclude_binaries=True, name="ytm-sync", console=True, icon=ICON,
 )
 background_exe = EXE(
-    pyz, analysis.scripts, [], exclude_binaries=True, name="ytm-sync-background", console=False,
+    pyz, analysis.scripts, [], exclude_binaries=True, name="ytm-sync-background", console=False, icon=ICON,
 )
 COLLECT(
     console_exe, background_exe, analysis.binaries, analysis.datas,

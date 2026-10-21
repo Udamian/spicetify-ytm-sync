@@ -179,7 +179,7 @@ export function Wizard({ onAuthLost, onFinished }: Props) {
     if (!result.ok) {
       setPhase({ kind: "setup" });
       if (result.error === "unauthorized") return onAuthLost();
-      return setError("wzStartError");
+      return setError(result.code === "bad_tracks" ? "wzBadTracks" : "wzStartError");
     }
     setPhase({ kind: "preview", sourceUri: uri, tracks, preview: result.data, dest });
   };

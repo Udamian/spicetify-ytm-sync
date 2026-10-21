@@ -20,4 +20,4 @@ out of YouTube Music everywhere to invalidate the session and delete the post.
 
 ## Status
 
-Pre-alpha. Until a stable release exists, only the latest commit on `main` is supported.
+Beta (0.1.x). Only the latest release is supported.

@@ -56,12 +56,19 @@ export class SpotifyReadError extends Error {
 export function toTrack(item: RawItem): SpotifyTrack | null {
   if (!item.uri || !item.uri.startsWith("spotify:track:")) return null;
   if (item.isLocal || (item.type && item.type !== "track")) return null;
+  // Cleaned to what the helper app accepts, so one odd song (a very long title, dozens of
+  // artists, a duration with decimals) cannot make it refuse the whole library.
+  const clip = (text: string | undefined, max: number) => (text ?? "").slice(0, max);
+  const ms = item.duration?.milliseconds;
   return {
     uri: item.uri,
-    title: item.name ?? "",
-    artists: (item.artists ?? []).map((a) => a.name ?? "").filter(Boolean),
-    durationMs: item.duration?.milliseconds ?? null,
-    album: item.album?.name ?? null,
+    title: clip(item.name, 300),
+    artists: (item.artists ?? []).map((a) => clip(a.name, 200)).filter(Boolean).slice(0, 20),
+    durationMs:
+      typeof ms === "number" && Number.isFinite(ms) && ms >= 0 && ms <= 86_400_000
+        ? Math.round(ms)
+        : null,
+    album: item.album?.name ? clip(item.album.name, 300) : null,
     addedAt: item.addedAt ?? null,
   };
 }
@@ -94,6 +101,31 @@ async function fetchPage(fetcher: PageFetcher, offset: number, limit: number): P
   }
 }
 
+/** Safety net against a source that never ends (100,000 rows at 500 per page). */
+const MAX_PAGES = 200;
+
+/**
+ * Walks the whole source page after page until Spotify returns an empty page, calling `onPage`
+ * with each page's rows, the rows read so far and a size hint for the progress bar.
+ *
+ * `totalLength` is NOT trusted to know when to stop: on the real Spotify it can be 0 or the size
+ * of the first page, and stopping there copied only the first 500 of 1,957 liked songs (found
+ * in the first beta test). It is only a hint.
+ */
+async function forEachPage(
+  fetcher: PageFetcher,
+  onPage: (items: RawItem[], read: number, hint: number) => void
+): Promise<void> {
+  let offset = 0;
+  for (let n = 0; n < MAX_PAGES; n++) {
+    const page = await fetchPage(fetcher, offset, PAGE_SIZE);
+    const items = page.items!;
+    if (items.length === 0) return;
+    offset += items.length;
+    onPage(items, offset, Math.max(page.totalLength ?? 0, offset));
+  }
+}
+
 /**
  * Whole source in Spotify's own order (index 0 = first row shown in the Spotify UI).
  * For Liked Songs that is newest first. Duplicated URIs are kept: they are part of the order.
@@ -102,37 +134,24 @@ export async function readAll(
   sourceUri: string,
   onProgress?: (read: number, total: number) => void
 ): Promise<SpotifyTrack[]> {
-  const fetcher = pageFetcher(sourceUri);
   const tracks: SpotifyTrack[] = [];
-  let offset = 0;
-  let total = Infinity;
-  while (offset < total) {
-    const page = await fetchPage(fetcher, offset, PAGE_SIZE);
-    total = page.totalLength ?? offset + page.items!.length;
-    for (const item of page.items!) {
+  await forEachPage(pageFetcher(sourceUri), (items, read, hint) => {
+    for (const item of items) {
       const track = toTrack(item);
       if (track) tracks.push(track);
     }
-    if (page.items!.length === 0) break; // defensive: never loop forever
-    offset += page.items!.length;
-    onProgress?.(Math.min(offset, total), total);
-  }
+    onProgress?.(read, hint);
+  });
   return tracks;
 }
 
-/** Number of rows Spotify reports for the source (cheap: one item). */
+/** Number of rows in the source, counted page by page (Spotify's own total is not reliable). */
 export async function readTotal(sourceUri: string): Promise<number> {
-  const fetcher = pageFetcher(sourceUri);
-  const page = await fetchPage(fetcher, 0, 1);
-  const reported = page.totalLength;
-  if (typeof reported === "number" && reported >= page.items!.length) return reported;
-  // Missing or contradictory total (for example 0 next to a returned row): count by paging.
   let count = 0;
-  for (let offset = 0; ; offset += PAGE_SIZE) {
-    const rows = (await fetchPage(fetcher, offset, PAGE_SIZE)).items!.length;
-    count += rows;
-    if (rows < PAGE_SIZE) return count;
-  }
+  await forEachPage(pageFetcher(sourceUri), (_items, read) => {
+    count = read;
+  });
+  return count;
 }
 
 /**
@@ -153,6 +172,5 @@ export async function readNewLiked(known: ReadonlySet<string>): Promise<SpotifyT
       fresh.push(track);
     }
     offset += page.items!.length;
-    if (offset >= (page.totalLength ?? offset)) return fresh;
   }
 }

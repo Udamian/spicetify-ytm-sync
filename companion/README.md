@@ -4,10 +4,9 @@ Local service (Python + Flask) that talks to YouTube Music through
 [`ytmusicapi`](https://github.com/sigma67/ytmusicapi) on behalf of the Spicetify custom app.
 It only listens on `127.0.0.1`.
 
-> **Status: pre-alpha.** In place: the security layer, header validation (plain, PowerShell and
-> cURL formats), settings, SQLite schema, track matching, the sync engine and a background worker,
-> exposed through the HTTP API below, all covered by tests against a simulated YouTube Music.
-> **Not yet run against the real service** end to end: do a dump into a throw-away playlist first.
+> **Status: beta (0.1.x).** The sync engine, matching, review list, reconnect-and-resume and the
+> Windows installer are used and tested by the project owner against the real YouTube Music (about
+> 2,000 liked songs). Everything is also covered by tests against a simulated YouTube Music.
 
 ## Run it (development)
 

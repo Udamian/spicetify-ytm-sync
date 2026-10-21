@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ytm-sync-companion"
-version = "0.1.0"
+version = "0.1.1"
 description = "Local companion service for the YTM Sync Spicetify custom app"
 readme = "README.md"
 requires-python = ">=3.10"
