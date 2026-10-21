@@ -46,11 +46,17 @@ export async function planFor(pair: Pair): Promise<Plan | null> {
   return same ? null : { kind: "initial_dump", tracks: all.map(toSyncTrack) };
 }
 
-/** Pairs that finished their first copy (an unfinished first copy is the wizard's job). */
+/**
+ * Pairs that finished their first copy (an unfinished first copy is the wizard's job) and that
+ * the person has not switched off.
+ */
 export async function syncedPairs(): Promise<Pair[] | null> {
   const result = await listPairs();
   if (!result.ok) return null;
-  return result.data.pairs.filter((p) => p.last_synced_at && p.mode === "additive");
+  // `active` is missing from an older helper app: only an explicit `false` switches a copy off.
+  return result.data.pairs.filter(
+    (p) => p.active !== false && p.last_synced_at && p.mode === "additive"
+  );
 }
 
 export type Started =

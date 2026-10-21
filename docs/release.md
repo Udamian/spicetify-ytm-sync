@@ -9,7 +9,7 @@
    The release workflow fails otherwise.
 4. **Checks:** `pytest` and `ruff check .` in `companion/`, `npm run typecheck` in `app/`, CI green
    on `main`.
-5. **Tag:** `git tag v0.1.1 && git push origin v0.1.1`. The *Release* workflow builds the Windows
+5. **Tag:** `git tag v0.1.4 && git push origin v0.1.4`. The *Release* workflow builds the Windows
    zip, runs the smoke test and creates a **draft** release with the zip and its `.sha256`.
 6. **Review the draft** on GitHub, download the zip, install it on a clean-ish machine, then
    **Publish**. Mark it *pre-release* while the beta runs.

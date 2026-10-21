@@ -37,6 +37,32 @@ def is_url(value: str) -> bool:
     return value.startswith(("http://", "https://"))
 
 
+VERSION_SOURCES = {
+    "companion/src/ytm_sync_companion/__init__.py": r'__version__ = "([^"]+)"',
+    "companion/pyproject.toml": r'(?m)^version = "([^"]+)"',
+    "app/package.json": r'"version": "([^"]+)"',
+    "app/src/lib/version.ts": r'APP_VERSION = "([^"]+)"',
+}
+
+
+def check_versions(errors: list[str]) -> None:
+    """The page, the helper app and the packages must carry the same version: the page warns
+    the person when it differs from the helper app that answers, so a mismatch is a bug."""
+    found: dict[str, str] = {}
+    for name, pattern in VERSION_SOURCES.items():
+        try:
+            match = re.search(pattern, (ROOT / name).read_text(encoding="utf-8"))
+        except OSError as exc:
+            errors.append(f"{name}: cannot read ({exc})")
+            continue
+        if match is None:
+            errors.append(f"{name}: no version found")
+        else:
+            found[name] = match.group(1)
+    if len(set(found.values())) > 1:
+        errors.append("versions differ: " + ", ".join(f"{n} = {v}" for n, v in found.items()))
+
+
 def main() -> int:
     errors: list[str] = []
 
@@ -60,6 +86,8 @@ def main() -> int:
         value = settings.get(key)
         if isinstance(value, str) and value and not (app_src / value).is_file():
             errors.append(f"app/src/settings.json: '{key}' points to a missing file: {value}")
+
+    check_versions(errors)
 
     if errors:
         print("\n".join(errors), file=sys.stderr)

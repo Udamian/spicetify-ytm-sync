@@ -36,6 +36,7 @@ from .ytm import looks_expired
 log = logging.getLogger(__name__)
 
 MAX_FIX_MOVES = 300
+READ_ATTEMPTS = 4  # tries for a read that fails oddly; waits 2 s, 4 s, 8 s between them
 
 
 class SyncError(Exception):
@@ -191,16 +192,32 @@ class SyncEngine:
             raise SyncError(f"unknown pair {pair_id}")
         return row
 
-    def _guard(self, call: Callable[[], Any]) -> Any:
-        """Run a client call, turning auth failures into `SessionExpired`."""
-        try:
-            return call()
-        except SyncError:
-            raise
-        except Exception as exc:
-            if looks_expired(str(exc)):
-                raise SessionExpired("YouTube Music rejected the session") from exc
-            raise SyncError(f"YouTube Music call failed: {type(exc).__name__}") from exc
+    def _guard(self, call: Callable[[], Any], *, attempts: int = 1) -> Any:
+        """Run a client call, turning auth failures into `SessionExpired`.
+
+        Only READS pass `attempts > 1` (search, reading the playlist): YouTube sometimes answers
+        a busy moment with a page ytmusicapi cannot parse (a `KeyError`), and asking again a few
+        seconds later works. Writes are never retried here (a retry after an exception could add
+        a song twice); `_write` checks the returned status instead.
+        """
+        for attempt in range(attempts):
+            try:
+                return call()
+            except SyncError:
+                raise
+            except Exception as exc:
+                if looks_expired(str(exc)):
+                    raise SessionExpired("YouTube Music rejected the session") from exc
+                # A KeyError's text is the missing key (a word like 'contents'): safe to show.
+                detail = type(exc).__name__ + (f": {str(exc)[:40]}" if isinstance(exc, KeyError)
+                                               else "")
+                if attempt + 1 < attempts:
+                    log.warning("YouTube Music read failed (%s), trying again (%d/%d)",
+                                detail, attempt + 1, attempts)
+                    self.sleep(2 ** (attempt + 1))
+                    continue
+                raise SyncError(f"YouTube Music call failed: {detail}") from exc
+        raise AssertionError("unreachable")  # attempts >= 1
 
     def _write(self, call: Callable[[], Any], what: str) -> None:
         """A write with retries; checks the returned status (ytmusicapi does not raise)."""
@@ -220,7 +237,9 @@ class SyncEngine:
         )
 
     def _dest(self, playlist_id: str) -> list[tuple[str, str]]:
-        data = self._guard(lambda: self.client.get_playlist(playlist_id, limit=None))
+        data = self._guard(
+            lambda: self.client.get_playlist(playlist_id, limit=None), attempts=READ_ATTEMPTS
+        )
         return [
             (t.get("setVideoId") or "", t["videoId"])
             for t in data.get("tracks", [])
@@ -233,7 +252,9 @@ class SyncEngine:
         query = matching.build_query(track)
         candidates: list[matching.Candidate] = []
         for kind in ("songs", "videos"):
-            hits = self._guard(lambda k=kind: self.client.search(query, filter=k, limit=5))
+            hits = self._guard(
+                lambda k=kind: self.client.search(query, filter=k, limit=5), attempts=READ_ATTEMPTS
+            )
             candidates += [c for c in map(matching.candidate_from_ytm, hits) if c]
             if kind == "songs" and matching.decide(track, candidates).status == "ok":
                 break  # a clean song match: no need to look at videos

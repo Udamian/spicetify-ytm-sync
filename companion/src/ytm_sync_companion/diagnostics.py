@@ -50,11 +50,13 @@ def collect(
     worker_running: bool,
 ) -> dict[str, Any]:
     pairs = []
-    for row in conn.execute("SELECT id, source_uri, mode, last_order, last_synced_at FROM pairs"):
+    query = "SELECT id, source_uri, mode, last_order, last_synced_at, active FROM pairs"
+    for row in conn.execute(query):
         pairs.append({
             "id": row["id"],
             "source": "liked_songs" if row["source_uri"] == LIKED else "playlist",
             "mode": row["mode"],
+            "active": bool(row["active"]),
             "synced_count": len(json.loads(row["last_order"] or "[]")),
             "last_synced_at": row["last_synced_at"],
         })

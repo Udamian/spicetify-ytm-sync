@@ -319,3 +319,60 @@ def test_a_refused_track_is_logged_by_position_and_field_never_by_name(
     assert response.get_json()["index"] == 2
     assert "track 2 refused: invalid artists" in caplog.text
     assert "Secret Song Name" not in caplog.text
+
+
+# ---- managing copies ---------------------------------------------------------------------
+
+
+def make_pair(client, auth, connected, fake, count=3, dest=DEST):
+    tracks = make_tracks(count)
+    for t in tracks:
+        fake.register(t)
+    body = {"source_uri": SOURCE, "dest_playlist_id": dest, "kind": "initial_dump",
+            "tracks": payload(tracks)}
+    return client.post("/sync/start", json=body, headers=auth).get_json()
+
+
+def test_copies_are_listed_as_active_and_can_be_switched_off_and_on(
+    client, auth, connected, fake, worker
+):
+    pair_id = make_pair(client, auth, connected, fake)["pair_id"]
+    worker.run_once()
+    listed = client.get("/pairs", headers=auth).get_json()["pairs"]
+    assert [(p["id"], p["active"]) for p in listed] == [(pair_id, True)]
+    off = client.post(f"/pairs/{pair_id}", json={"active": False}, headers=auth)
+    assert off.get_json() == {"id": pair_id, "active": False}
+    assert client.get("/pairs", headers=auth).get_json()["pairs"][0]["active"] is False
+    client.post(f"/pairs/{pair_id}", json={"active": True}, headers=auth)
+    assert client.get("/pairs", headers=auth).get_json()["pairs"][0]["active"] is True
+
+
+def test_pair_update_validates_and_needs_the_token(client, auth, connected, fake):
+    pair_id = make_pair(client, auth, connected, fake)["pair_id"]
+    assert client.post(f"/pairs/{pair_id}", json={"active": False}, headers=HOST_HEADER
+                       ).status_code == 401
+    assert client.post(f"/pairs/{pair_id}", json={"active": "no"}, headers=auth).status_code == 400
+    assert client.post("/pairs/999", json={"active": False}, headers=auth).status_code == 404
+
+
+def test_forgetting_a_copy_keeps_the_matches_and_touches_nothing_on_youtube(
+    client, auth, connected, fake, worker
+):
+    pair_id = make_pair(client, auth, connected, fake, count=4)["pair_id"]
+    worker.run_once()
+    before = list(fake.ids(DEST))
+    assert client.delete(f"/pairs/{pair_id}", headers=auth).status_code == 204
+    assert client.get("/pairs", headers=auth).get_json() == {"pairs": []}
+    assert fake.ids(DEST) == before  # the YouTube Music playlist is untouched
+    # the matches survive: copying the same songs to another playlist searches nothing new
+    conn = connect(client.application.extensions["ytm_sync"].settings.db_path)
+    assert conn.execute("SELECT COUNT(*) FROM track_map").fetchone()[0] == 4
+    assert conn.execute("SELECT COUNT(*) FROM jobs").fetchone()[0] == 0
+    conn.close()
+
+
+def test_a_copy_that_is_running_cannot_be_forgotten(client, auth, connected, fake):
+    started = make_pair(client, auth, connected, fake)
+    response = client.delete(f"/pairs/{started['pair_id']}", headers=auth)
+    assert (response.status_code, response.get_json()["job_id"]) == (409, started["job_id"])
+    assert client.delete("/pairs/999", headers=auth).status_code == 404

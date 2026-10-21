@@ -166,9 +166,15 @@ const en = {
   wzResumeError: "Could not resume it. Start the copy again.",
 
   pnTitle: "Helper app",
-  pnRunning: "Running (v{version})",
+  versionMismatch:
+    "This page is version {app} but the helper app is version {companion}. Some buttons will not work until you run \"Install YTM Sync.cmd\" again from the latest release and it finishes without errors.",
+  cpOutdated:
+    "Your helper app is older than this page and cannot do that. Run \"Install YTM Sync.cmd\" again from the latest release.",
+  pnWorking: "Working",
+  pnRunningShort: "Running",
+  pnLabelVersion: "Version",
+  pnLabelLast: "Last sync",
   pnLastNever: "Not synced yet",
-  pnLast: "Last sync: {when}",
   pnWhenNow: "just now",
   pnWhenMinutes: "{n} min ago",
   pnWhenHours: "{n} h ago",
@@ -193,6 +199,23 @@ const en = {
   pnDiagCopied: "Copied. Paste it into your bug report.",
   pnDiagFailed: "Could not read the diagnostics. Is the helper app running?",
   pnDiagManual: "Could not copy it automatically. Select the text below and copy it.",
+
+  cpTitle: "Your copies",
+  cpHint: "These are kept up to date every time Spotify starts.",
+  cpLiked: "Liked Songs",
+  cpPlaylist: "Spotify playlist",
+  cpSongs: "{n} songs",
+  cpSongsOne: "1 song",
+  cpDetail: "{count} · last sync {when}",
+  cpUnfinished: "The first copy was not finished",
+  cpActive: "Keep this copy up to date",
+  cpInactive: "Switched off: it is skipped at startup and by \"Check the order now\".",
+  cpForget: "Stop syncing and forget this copy",
+  cpForgetAsk:
+    "Forget this copy? It stops updating. Nothing is deleted on YouTube Music or Spotify.",
+  cpForgetYes: "Yes, forget it",
+  cpRunning: "It is copying right now. Wait until it finishes.",
+  cpError: "Could not change that. Is the helper app running?",
 } as const;
 
 export type Key = keyof typeof en;
@@ -373,9 +396,15 @@ const es: Table = {
   wzResumeError: "No se pudo reanudar. Empieza la copia de nuevo.",
 
   pnTitle: "App auxiliar",
-  pnRunning: "En marcha (v{version})",
+  versionMismatch:
+    "Esta página es la versión {app} pero la app auxiliar es la {companion}. Algunos botones no funcionarán hasta que vuelvas a ejecutar «Install YTM Sync.cmd» de la última versión y termine sin errores.",
+  cpOutdated:
+    "Tu app auxiliar es más antigua que esta página y no puede hacer eso. Vuelve a ejecutar «Install YTM Sync.cmd» de la última versión.",
+  pnWorking: "Trabajando",
+  pnRunningShort: "En marcha",
+  pnLabelVersion: "Versión",
+  pnLabelLast: "Última sincronización",
   pnLastNever: "Todavía sin sincronizar",
-  pnLast: "Última sincronización: {when}",
   pnWhenNow: "ahora mismo",
   pnWhenMinutes: "hace {n} min",
   pnWhenHours: "hace {n} h",
@@ -401,6 +430,23 @@ const es: Table = {
   pnDiagCopied: "Copiado. Pégalo en tu informe de error.",
   pnDiagFailed: "No se pudo leer el diagnóstico. ¿Está en marcha la app auxiliar?",
   pnDiagManual: "No se pudo copiar automáticamente. Selecciona el texto de abajo y cópialo.",
+
+  cpTitle: "Tus copias",
+  cpHint: "Se mantienen al día cada vez que arranca Spotify.",
+  cpLiked: "Canciones que te gustan",
+  cpPlaylist: "Playlist de Spotify",
+  cpSongs: "{n} canciones",
+  cpSongsOne: "1 canción",
+  cpDetail: "{count} · última sincronización {when}",
+  cpUnfinished: "La primera copia no se terminó",
+  cpActive: "Mantener esta copia al día",
+  cpInactive: "Desactivada: se omite al arrancar y en «Comprobar el orden ahora».",
+  cpForget: "Dejar de sincronizar y olvidar esta copia",
+  cpForgetAsk:
+    "¿Olvidar esta copia? Deja de actualizarse. No se borra nada de YouTube Music ni de Spotify.",
+  cpForgetYes: "Sí, olvidarla",
+  cpRunning: "Se está copiando ahora mismo. Espera a que termine.",
+  cpError: "No se pudo cambiar. ¿Está en marcha la app auxiliar?",
 };
 
 const tables: Record<"en" | "es", Table> = { en, es };

@@ -28,7 +28,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from . import runtime
+from . import __version__, runtime
 from .config import Settings
 
 APP_FOLDER = "ytm-sync"
@@ -84,6 +84,7 @@ class Env:
     executable: Path = field(default_factory=lambda: Path(sys.executable))
     start_companion: Callable[[Sequence[str]], None] = runtime.start_detached
     stop_companion: Callable[[Settings], bool] = runtime.request_shutdown
+    companion_version: Callable[[Settings], str | None] = runtime.running_version
     sleep: Callable[[float], None] = time.sleep
     out: Callable[[str], None] = print
 
@@ -356,6 +357,20 @@ def _install_steps(
                 "Start the YTM Sync companion (no window)",
             ))
 
+        def check_running() -> None:
+            # An old companion that kept running would leave the page newer than the program.
+            found = None
+            for _ in range(30):
+                found = env.companion_version(settings)
+                if found == __version__:
+                    return
+                env.sleep(0.5)
+            raise InstallError(
+                f"The companion that answers is {'version ' + found if found else 'not running'}, "
+                f"not the new version {__version__}. Restart your computer (or end "
+                "'ytm-sync-background' in the Task Manager) and run this installer again."
+            )
+
         def start_menu_shortcut() -> None:
             _powershell(env, shortcut_script(
                 _start_menu(env) / CODE_SHORTCUT, str(installed_exe), "code --pause", str(target),
@@ -368,6 +383,7 @@ def _install_steps(
             ("Start the companion when you sign in", startup_shortcut),
             ("Add the Desktop shortcut 'Start YTM Sync'", desktop_shortcut),
             ("Start the companion now", lambda: env.start_companion(background())),
+            ("Check that the new companion is the one running", check_running),
         ]
     else:
         steps.append((

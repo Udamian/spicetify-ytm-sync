@@ -55,6 +55,13 @@ The page walks you through four steps:
    are stored on your computer only. See [`docs/security.md`](docs/security.md).
 4. **Playlist:** choose what to copy and where, press *Check and preview*, then *Start copying*.
 
+The **Your copies** card lists every copy being kept up to date: switch one off, or forget an old
+one (nothing is deleted on YouTube Music or Spotify).
+
+The **Your copies** card lists everything being kept in sync (Liked Songs or playlists, and the
+YouTube Music playlist each goes to). You can switch a copy off or **forget** it; forgetting never
+deletes anything on YouTube Music or Spotify.
+
 The **Helper app** card at the bottom of the page shows its status and has *Sync now*, *Start with
 Windows*, *Copy diagnostics* (a summary with no passwords or song names, for bug reports) and
 *Stop*.

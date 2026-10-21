@@ -94,6 +94,20 @@ def is_running(settings: Settings, timeout: float = 1.0) -> bool:
     return isinstance(body, dict) and "api_version" in body
 
 
+def running_version(settings: Settings, timeout: float = 1.0) -> str | None:
+    """The version a running YTM Sync companion reports, or None when none answers."""
+    url = f"http://{HOST}:{settings.port}/health"
+    request = urllib.request.Request(url, headers={"Host": f"{HOST}:{settings.port}"})  # noqa: S310
+    try:
+        with _DIRECT.open(request, timeout=timeout) as response:
+            body = json.loads(response.read().decode("utf-8"))
+    except (urllib.error.URLError, OSError, ValueError):
+        return None
+    if isinstance(body, dict) and "api_version" in body:
+        return str(body.get("version", ""))
+    return None
+
+
 BACKGROUND_EXE = "ytm-sync-background"  # windowed build next to the console one (Windows)
 
 

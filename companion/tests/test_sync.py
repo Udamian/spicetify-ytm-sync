@@ -242,3 +242,53 @@ def test_to_spotify_tracks_accepts_app_payload():
         [{"uri": "spotify:track:1", "title": "T", "artists": ["A", "B"], "durationMs": 1000}]
     )
     assert tracks[0].artists == ("A", "B") and tracks[0].duration_ms == 1000
+
+
+# ---- reads that fail oddly (YouTube busy: ytmusicapi cannot parse the page) ---------------
+
+
+class FlakyReads(FakeYTM):
+    """Fails the first `failures` reads with a KeyError, like an unparsable YouTube page."""
+
+    def __init__(self, failures: int) -> None:
+        super().__init__()
+        self.failures = failures
+
+    def _maybe_fail(self) -> None:
+        if self.failures > 0:
+            self.failures -= 1
+            raise KeyError("contents")
+
+    def get_playlist(self, playlistId, limit=None):
+        self._maybe_fail()
+        return super().get_playlist(playlistId, limit)
+
+
+def test_a_read_that_fails_oddly_is_tried_again_and_the_copy_goes_on(conn, pair_id):
+    flaky, sleeps = FlakyReads(failures=2), []
+    tracks = make_tracks(5)
+    register_all(flaky, tracks)
+    report = SyncEngine(conn, flaky, sleep=sleeps.append).dump(pair_id, tracks)
+    assert report.added == 5 and report.order_verified is True
+    assert [s for s in sleeps if s >= 2][:2] == [2, 4]  # waits a little longer each time
+
+
+def test_a_read_that_keeps_failing_says_what_was_missing_not_more(conn, pair_id):
+    from ytm_sync_companion.sync import SyncError
+
+    flaky = FlakyReads(failures=99)
+    tracks = make_tracks(2)
+    register_all(flaky, tracks)
+    with pytest.raises(SyncError) as info:
+        SyncEngine(conn, flaky, sleep=lambda _s: None).dump(pair_id, tracks)
+    assert "KeyError: 'contents'" in str(info.value)
+
+
+def test_an_expired_session_is_not_retried(conn, pair_id):
+    fake, sleeps = FakeYTM(), []
+    tracks = make_tracks(2)
+    register_all(fake, tracks)
+    fake.fail_with = Exception("HTTP 403 Forbidden")
+    with pytest.raises(SessionExpired):
+        SyncEngine(conn, fake, sleep=sleeps.append).dump(pair_id, tracks)
+    assert sleeps == []

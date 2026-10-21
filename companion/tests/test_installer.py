@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from ytm_sync_companion import installer
+from ytm_sync_companion import __version__, installer
 from ytm_sync_companion.config import Settings
 from ytm_sync_companion.installer import Env
 
@@ -275,6 +275,7 @@ def windows(tmp_path: Path, built_app):
         executable=release / "ytm-sync.exe",
         start_companion=started.append,
         stop_companion=lambda s: stopped.append(s) or True,
+        companion_version=lambda _s: __version__,  # the new companion answers
         sleep=lambda _s: None, out=lines.append,
     )
     return env, fake, started, stopped, lines, local, roaming
@@ -370,3 +371,18 @@ def test_uninstall_dry_run_changes_nothing(tmp_path, built_app, linux):
     before = list(fake.calls)
     assert installer.uninstall(settings_in(tmp_path), dry_run=True, env=env) == 0
     assert fake.calls == before and fake.apps == ["ytm-sync"]
+
+
+def test_install_fails_loudly_when_an_old_companion_keeps_running(tmp_path, built_app, windows):
+    env, _fake, _started, _stopped, lines, *_ = windows
+    env.companion_version = lambda _s: "0.0.9"  # the old one never went away
+    assert installer.install(settings_in(tmp_path), app_dir=str(built_app), env=env) == 1
+    text = "\n".join(lines)
+    assert "version 0.0.9" in text and __version__ in text and "run this installer again" in text
+
+
+def test_install_fails_loudly_when_no_companion_answers(tmp_path, built_app, windows):
+    env, _fake, _started, _stopped, lines, *_ = windows
+    env.companion_version = lambda _s: None
+    assert installer.install(settings_in(tmp_path), app_dir=str(built_app), env=env) == 1
+    assert "not running" in "\n".join(lines)

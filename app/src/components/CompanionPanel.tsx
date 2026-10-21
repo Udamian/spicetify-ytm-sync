@@ -21,7 +21,9 @@ const POLL_MS = 4000;
 
 /** "5 min ago" style text for an ISO timestamp. */
 export function whenText(iso: string | null, now = Date.now()): string {
-  const then = iso ? Date.parse(iso) : NaN;
+  // The helper app stores UTC as "2026-10-20 19:47:47": say so, or the browser reads local time.
+  const utc = iso && /^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d$/.test(iso) ? iso.replace(" ", "T") + "Z" : iso;
+  const then = utc ? Date.parse(utc) : NaN;
   if (Number.isNaN(then)) return t("pnWhenNow");
   const minutes = Math.max(0, Math.floor((now - then) / 60000));
   if (minutes < 1) return t("pnWhenNow");
@@ -131,37 +133,49 @@ export function CompanionPanel({ onStopped }: { onStopped: () => void }) {
 
   return (
     <section className={styles.card}>
-      <h2>{t("pnTitle")}</h2>
-
-      <p>
-        {version ? t("pnRunning", { version }) : t("checking")}
-        {" · "}
-        <span className={styles.muted}>
-          {lastSync ? t("pnLast", { when: whenText(lastSync) }) : t("pnLastNever")}
+      <div className={styles.panelHead}>
+        <h2>{t("pnTitle")}</h2>
+        <span className={styles.pill}>
+          <span className={busy ? styles.dotBusy : version ? styles.dotOk : styles.dotIdle} />
+          {version ? t(busy ? "pnWorking" : "pnRunningShort") : t("checking")}
         </span>
-      </p>
+      </div>
+
+      <div className={styles.stats}>
+        <div className={styles.stat}>
+          <span className={styles.statLabel}>{t("pnLabelVersion")}</span>
+          <strong>{version ? `v${version}` : "–"}</strong>
+        </div>
+        <div className={styles.stat}>
+          <span className={styles.statLabel}>{t("pnLabelLast")}</span>
+          <strong>{lastSync ? whenText(lastSync) : t("pnLastNever")}</strong>
+        </div>
+      </div>
 
       {busy && (
-        <>
-          <p className={styles.muted}>{t("pnBusy", { percent: Math.round(busy.progress * 100) })}</p>
+        <div className={styles.fill}>
+          <span className={styles.muted}>{t("pnBusy", { percent: Math.round(busy.progress * 100) })}</span>
           <Bar value={busy.progress} />
-        </>
+        </div>
       )}
 
-      <div className={styles.row}>
+      <div className={styles.actions}>
         <button className={styles.button} onClick={syncNow} disabled={syncing || !!busy}>
           {syncing ? t("pnSyncing") : t("pnSyncNow")}
         </button>
+        <button className={styles.ghostButton} onClick={copyDiagnostics} title={t("pnDiagHint")}>
+          {t("pnDiag")}
+        </button>
         {!confirmStop && (
-          <button className={styles.linkButton} onClick={() => setConfirmStop(true)}>
+          <button className={styles.dangerButton} onClick={() => setConfirmStop(true)}>
             {t("pnStop")}
           </button>
         )}
       </div>
 
       {confirmStop && (
-        <>
-          <p className={styles.warning}>{t("pnStopAsk")}</p>
+        <div className={styles.confirm}>
+          <span>{t("pnStopAsk")}</span>
           <div className={styles.row}>
             <button className={styles.smallButton} onClick={stop}>
               {t("pnStop")}
@@ -170,29 +184,24 @@ export function CompanionPanel({ onStopped }: { onStopped: () => void }) {
               {t("wzCancel")}
             </button>
           </div>
-        </>
+        </div>
       )}
 
       {autostart?.supported && (
-        <>
-          <label className={styles.choice}>
-            <input
-              type="checkbox"
-              checked={autostart.enabled}
-              onChange={(e) => toggleAutostart(e.target.checked)}
-            />
-            <span>{t("pnAutostart")}</span>
-          </label>
-          <p className={styles.muted}>{t("pnAutostartHint")}</p>
-        </>
+        <label className={styles.switchRow}>
+          <span className={styles.switchText}>
+            <strong>{t("pnAutostart")}</strong>
+            <small className={styles.muted}>{t("pnAutostartHint")}</small>
+          </span>
+          <input
+            className={styles.switch}
+            type="checkbox"
+            role="switch"
+            checked={autostart.enabled}
+            onChange={(e) => toggleAutostart(e.target.checked)}
+          />
+        </label>
       )}
-
-      <div className={styles.row}>
-        <button className={styles.linkButton} onClick={copyDiagnostics}>
-          {t("pnDiag")}
-        </button>
-      </div>
-      <p className={styles.muted}>{t("pnDiagHint")}</p>
 
       {message && <p className={tone[message.tone]}>{t(message.text, message.vars)}</p>}
       {diagText && <textarea className={styles.textarea} readOnly rows={8} value={diagText} />}

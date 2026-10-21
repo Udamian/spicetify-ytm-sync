@@ -206,9 +206,23 @@ export type Pair = {
   mode: "additive" | "mirror";
   last_synced_at: string | null;
   synced_count: number;
+  /** False when the person switched this copy off: it is skipped at startup. */
+  active: boolean;
 };
 
 export const listPairs = () => request<{ pairs: Pair[] }>("/pairs", { auth: true });
+
+/** Switch a copy on or off (off: skipped at startup and by "check the order now"). */
+export const setPairActive = (pairId: number, active: boolean) =>
+  request<{ id: number; active: boolean }>(`/pairs/${pairId}`, {
+    method: "POST",
+    body: { active },
+    auth: true,
+  });
+
+/** Forget a copy. Nothing is deleted on YouTube Music or Spotify. */
+export const deletePair = (pairId: number) =>
+  request<void>(`/pairs/${pairId}`, { method: "DELETE", auth: true });
 
 /** Spotify URIs of the pair's last completed sync, in Spotify order. */
 export const pairSynced = (pairId: number) =>

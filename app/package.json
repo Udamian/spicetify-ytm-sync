@@ -1,6 +1,6 @@
 {
   "name": "ytm-sync",
-  "version": "0.1.1",
+  "version": "0.1.4",
   "private": true,
   "description": "Spicetify custom app that keeps a Spotify playlist mirrored to YouTube Music",
   "scripts": {

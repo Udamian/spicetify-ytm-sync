@@ -57,6 +57,10 @@ MIGRATIONS: tuple[str, ...] = (
     ALTER TABLE jobs ADD COLUMN error_code TEXT;  -- session_expired, write_failed, ...
     ALTER TABLE jobs ADD COLUMN report     TEXT;  -- JSON summary of a finished job
     """,
+    # --- v3: a copy can be switched off without forgetting it ------------------------------
+    """
+    ALTER TABLE pairs ADD COLUMN active INTEGER NOT NULL DEFAULT 1;
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)

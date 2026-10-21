@@ -1,6 +1,7 @@
 import React from "react";
 import styles from "./css/app.module.scss";
 import { CompanionPanel } from "./components/CompanionPanel";
+import { CopiesPanel } from "./components/CopiesPanel";
 import { OrderCheck } from "./components/OrderCheck";
 import { Stepper, StepId } from "./components/Stepper";
 import { Review } from "./screens/Review";
@@ -16,6 +17,7 @@ import {
   tokenStore,
 } from "./lib/companion";
 import { Key, t } from "./lib/i18n";
+import { APP_VERSION } from "./lib/version";
 import { autoSyncSetting } from "./lib/settings";
 
 // Setup (roadmap phase 3): find the helper app, pair, connect YouTube Music, then the wizard
@@ -51,6 +53,8 @@ function App() {
   const [view, setView] = React.useState<View>({ kind: "checking" });
   const [code, setCode] = React.useState("");
   const [reviewKey, setReviewKey] = React.useState(0);
+  // Version of the helper app when it differs from this page (a half-finished update).
+  const [otherVersion, setOtherVersion] = React.useState<string | null>(null);
   const [auto, setAuto] = React.useState(() => autoSyncSetting.get());
   const onFinished = React.useCallback(() => setReviewKey((n) => n + 1), []);
 
@@ -61,6 +65,7 @@ function App() {
     if (info.data.api_version !== SUPPORTED_API_VERSION) {
       return setView({ kind: "incompatible", info: info.data });
     }
+    setOtherVersion(info.data.version !== APP_VERSION ? info.data.version : null);
     if (!tokenStore.get()) return setView({ kind: "unpaired" });
     const status = await authStatus();
     if (!status.ok) {
@@ -94,6 +99,12 @@ function App() {
       <p className={styles.subtitle}>{t("appSubtitle")}</p>
 
       <Stepper current={currentStep(view)} />
+
+      {otherVersion && (
+        <p className={styles.notice}>
+          {t("versionMismatch", { app: APP_VERSION, companion: otherVersion })}
+        </p>
+      )}
 
       {view.kind === "checking" && <p className={styles.muted}>{t("checking")}</p>}
 
@@ -146,6 +157,7 @@ function App() {
         <>
           <Wizard onAuthLost={refresh} onFinished={onFinished} />
           <Review refreshKey={reviewKey} onAuthLost={refresh} />
+          <CopiesPanel refreshKey={reviewKey} onAuthLost={refresh} />
           <section className={styles.card}>
             <label className={styles.choice}>
               <input

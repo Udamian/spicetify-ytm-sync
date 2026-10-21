@@ -405,16 +405,44 @@ def create_app(
     def pairs() -> Any:
         with db() as conn:
             rows = conn.execute(
-                "SELECT id, source_uri, dest_playlist_id, mode, last_order, last_synced_at "
+                "SELECT id, source_uri, dest_playlist_id, mode, last_order, last_synced_at, active "
                 "FROM pairs ORDER BY id"
             ).fetchall()
         return jsonify({"pairs": [
             {"id": r["id"], "source_uri": r["source_uri"],
              "dest_playlist_id": r["dest_playlist_id"], "mode": r["mode"],
-             "last_synced_at": r["last_synced_at"],
+             "last_synced_at": r["last_synced_at"], "active": bool(r["active"]),
              "synced_count": len(json.loads(r["last_order"] or "[]"))}
             for r in rows
         ]})
+
+    @app.post("/pairs/<int:pair_id>")
+    def pair_update(pair_id: int) -> Any:
+        """Switch a copy on or off. Off: it is skipped at startup and by "check the order"."""
+        body = request.get_json(silent=True)
+        active = body.get("active") if isinstance(body, dict) else None
+        if not isinstance(active, bool):
+            return _error("bad_request", 400)
+        with db() as conn:
+            changed = conn.execute(
+                "UPDATE pairs SET active = ? WHERE id = ?", (int(active), pair_id)
+            ).rowcount
+            conn.commit()
+        return jsonify({"id": pair_id, "active": active}) if changed else _error("not_found", 404)
+
+    @app.delete("/pairs/<int:pair_id>")
+    def pair_delete(pair_id: int) -> Any:
+        """Forget a copy (its history goes too). Nothing is deleted on YouTube Music or Spotify,
+        and the matches found for the songs are kept for the other copies."""
+        with db() as conn:
+            if conn.execute("SELECT 1 FROM pairs WHERE id = ?", (pair_id,)).fetchone() is None:
+                return _error("not_found", 404)
+            running = jobs.active_for_pair(conn, pair_id)
+            if running:
+                return _error("already_running", 409, job_id=running.id)
+            conn.execute("DELETE FROM pairs WHERE id = ?", (pair_id,))
+            conn.commit()
+        return "", 204
 
     @app.get("/pairs/<int:pair_id>/synced")
     def pair_synced(pair_id: int) -> Any:
